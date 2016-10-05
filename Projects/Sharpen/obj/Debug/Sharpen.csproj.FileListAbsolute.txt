@@ -17,4 +17,3 @@ C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\Sharpen.dll
 C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\Sharpen.pdb
 C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\Sharpen\obj\Debug\Sharpen.dll
 C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\Sharpen\obj\Debug\Sharpen.pdb
-C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\Sharpen\obj\Debug\Sharpen.csprojResolveAssemblyReference.cache

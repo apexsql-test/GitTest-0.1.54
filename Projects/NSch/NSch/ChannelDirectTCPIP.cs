@@ -30,6 +30,7 @@ All credit should go to the authors of jsch.
 */
 
 using System;
+using System.IO;
 using NSch;
 using Sharpen;
 
@@ -51,7 +52,8 @@ namespace NSch
 
 		internal int originator_port = 0;
 
-		public ChannelDirectTCPIP() : base()
+		internal ChannelDirectTCPIP()
+			: base()
 		{
 			type = _type;
 			SetLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
@@ -65,8 +67,9 @@ namespace NSch
 		}
 
 		/// <exception cref="NSch.JSchException"></exception>
-		public override void Connect()
+		public override void Connect(int connectTimeout)
 		{
+			this.connectTimeout = connectTimeout;
 			try
 			{
 				Session _session = GetSession();
@@ -83,6 +86,10 @@ namespace NSch
 						thread.SetDaemon(_session.daemon_thread);
 					}
 					thread.Start();
+				}
+				else
+				{
+					SendChannelOpen();
 				}
 			}
 			catch (Exception e)
@@ -131,7 +138,16 @@ namespace NSch
 			}
 			catch (Exception)
 			{
+				// Whenever an exception is thrown by sendChannelOpen(),
+				// 'connected' is false.
+				if (!connected)
+				{
+					connected = true;
+				}
+				Disconnect();
+				return;
 			}
+			Eof();
 			Disconnect();
 		}
 
@@ -167,7 +183,8 @@ namespace NSch
 
 		protected internal override Packet GenChannelOpenPacket()
 		{
-			Buffer buf = new Buffer(150);
+			Buffer buf = new Buffer(50 + host.Length + originator_IP_address.Length + Session.buffer_margin);
+			// 6 + 4*8 + 12
 			Packet packet = new Packet(buf);
 			// byte   SSH_MSG_CHANNEL_OPEN(90)
 			// string channel type         //
