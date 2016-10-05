@@ -1,0 +1,82 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sharpen", "Projects\Sharpen\Sharpen.csproj", "{72944A6C-45FF-4EF8-B349-8C9CABF519D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NSch", "Projects\NSch\NSch.csproj", "{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGit", "Projects\NGit\NGit.csproj", "{E3BFF8B4-189C-496A-A817-7E8B31E22B91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitSSHConnectionTest", "GitSSHConnectionTest\GitSSHConnectionTest.csproj", "{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
+		Development|Any CPU = Development|Any CPU
+		Development|x86 = Development|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
+		ReleaseTrace|Any CPU = ReleaseTrace|Any CPU
+		ReleaseTrace|x86 = ReleaseTrace|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Development|Any CPU.ActiveCfg = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Development|Any CPU.Build.0 = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Development|x86.ActiveCfg = Debug|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.Release|x86.ActiveCfg = Release|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.ReleaseTrace|Any CPU.ActiveCfg = Release|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.ReleaseTrace|Any CPU.Build.0 = Release|Any CPU
+		{72944A6C-45FF-4EF8-B349-8C9CABF519D4}.ReleaseTrace|x86.ActiveCfg = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Development|Any CPU.ActiveCfg = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Development|Any CPU.Build.0 = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Development|x86.ActiveCfg = Debug|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.Release|x86.ActiveCfg = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.ReleaseTrace|Any CPU.ActiveCfg = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.ReleaseTrace|Any CPU.Build.0 = Release|Any CPU
+		{A19E6F3F-A25B-4B01-8922-CF0CC35C781D}.ReleaseTrace|x86.ActiveCfg = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Development|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Development|Any CPU.Build.0 = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Development|x86.ActiveCfg = Debug|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.Release|x86.ActiveCfg = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.ReleaseTrace|Any CPU.ActiveCfg = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.ReleaseTrace|Any CPU.Build.0 = Release|Any CPU
+		{E3BFF8B4-189C-496A-A817-7E8B31E22B91}.ReleaseTrace|x86.ActiveCfg = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Development|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Development|Any CPU.Build.0 = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Development|x86.ActiveCfg = Debug|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.Release|x86.ActiveCfg = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.ReleaseTrace|Any CPU.ActiveCfg = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.ReleaseTrace|Any CPU.Build.0 = Release|Any CPU
+		{2FBFE2C9-2830-41DA-AD8A-D9B6B3DEF656}.ReleaseTrace|x86.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
+EndGlobal

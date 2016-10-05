@@ -1,0 +1,19 @@
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\Sharpen\obj\Debug\Sharpen.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\bin\Sharpen.dll
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\bin\Sharpen.pdb
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\Sharpen\obj\Debug\Sharpen.dll
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\Sharpen\obj\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\bin\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\bin\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\Sharpen\obj\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\Sharpen\obj\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Build\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Build\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Build\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Build\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Projects\Sharpen\obj\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Projects\Sharpen\obj\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\Sharpen\obj\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\Sharpen\obj\Debug\Sharpen.pdb

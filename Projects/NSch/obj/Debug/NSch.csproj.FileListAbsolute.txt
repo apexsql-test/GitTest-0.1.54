@@ -1,0 +1,22 @@
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\bin\NSch.dll
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\bin\NSch.pdb
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\NSch\obj\Debug\NSch.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\NSch\obj\Debug\NSch.dll
+C:\Users\Grigoryan\FreeLancing\Freelancer.com\Git engine\ngit-master\NSch\obj\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\bin\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\bin\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\NSch\obj\Debug\NSch.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\NSch\obj\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Projects\NSch\obj\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Build\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\SCLoader\Branches\Developer-improvements\Build\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Build\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Build\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Projects\NSch\obj\Debug\NSch.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Projects\NSch\obj\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest\Projects\NSch\obj\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Build\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\NSch\obj\Debug\NSch.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\NSch\obj\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\Projects\NSch\obj\Debug\NSch.pdb
