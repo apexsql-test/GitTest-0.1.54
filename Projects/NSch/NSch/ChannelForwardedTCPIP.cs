@@ -60,6 +60,9 @@ namespace NSch
 
 		internal int rport;
 
+		private ChannelForwardedTCPIP.Config config = null;
+
+
 		internal ChannelForwardedTCPIP()
 			: base()
 		{
@@ -195,7 +198,6 @@ namespace NSch
 			}
 		}
 
-		//System.err.println("??");
 		internal static object[] GetPort(Session session, int rport)
 		{
 			lock (pool)
@@ -267,16 +269,14 @@ namespace NSch
 		}
 
 		/// <exception cref="NSch.JSchException"/>
-		internal static void AddPort(Session session, string _address_to_bind, int port, 
-			string target, int lport, SocketFactory factory)
+		internal static void AddPort(Session session, string _address_to_bind, int port, string target, int lport, SocketFactory factory)
 		{
 			string address_to_bind = Normalize(_address_to_bind);
 			lock (pool)
 			{
 				if (GetPort(session, port) != null)
 				{
-					throw new JSchException("PortForwardingR: remote port " + port + " is already registered."
-						);
+					throw new JSchException("PortForwardingR: remote port " + port + " is already registered.");
 				}
 				object[] foo = new object[6];
 				foo[0] = session;
@@ -290,16 +290,14 @@ namespace NSch
 		}
 
 		/// <exception cref="NSch.JSchException"/>
-		internal static void AddPort(Session session, string _address_to_bind, int port, 
-			string daemon, object[] arg)
+		internal static void AddPort(Session session, string _address_to_bind, int port, string daemon, object[] arg)
 		{
 			string address_to_bind = Normalize(_address_to_bind);
 			lock (pool)
 			{
 				if (GetPort(session, port) != null)
 				{
-					throw new JSchException("PortForwardingR: remote port " + port + " is already registered."
-						);
+					throw new JSchException("PortForwardingR: remote port " + port + " is already registered.");
 				}
 				object[] foo = new object[5];
 				foo[0] = session;
@@ -420,6 +418,31 @@ namespace NSch
 		internal virtual void SetSocketFactory(SocketFactory factory)
 		{
 			this.factory = factory;
+		}
+
+		internal abstract class Config
+		{
+			internal Session session;
+
+			internal int rport;
+
+			internal int allocated_rport;
+
+			internal string address_to_bind;
+
+			internal string target;
+		}
+
+		internal class ConfigDaemon : ChannelForwardedTCPIP.Config
+		{
+			internal object[] arg;
+		}
+
+		internal class ConfigLHost : ChannelForwardedTCPIP.Config
+		{
+			internal int lport;
+
+			internal SocketFactory factory;
 		}
 	}
 }
