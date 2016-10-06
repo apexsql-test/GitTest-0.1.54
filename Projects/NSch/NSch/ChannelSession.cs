@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -68,26 +68,26 @@ namespace NSch
 		}
 
 		/// <summary>Enable the agent forwarding.</summary>
-		/// <remarks>Enable the agent forwarding.</remarks>
-		/// <param name="enable"></param>
+		/// <param name="enable"/>
 		public virtual void SetAgentForwarding(bool enable)
 		{
 			agent_forwarding = enable;
 		}
 
 		/// <summary>Enable the X11 forwarding.</summary>
-		/// <remarks>Enable the X11 forwarding.</remarks>
-		/// <param name="enable"></param>
-		/// <seealso cref="RFC4254">6.3.1. Requesting X11 Forwarding</seealso>
+		/// <remarks>
+		/// Enable the X11 forwarding.
+		/// Refer to RFC4254 6.3.1. Requesting X11 Forwarding.
+		/// </remarks>
+		/// <param name="enable"/>
 		public override void SetXForwarding(bool enable)
 		{
 			xforwading = enable;
 		}
 
-		/// <seealso cref="SetEnv(string, string)">SetEnv(string, string)</seealso>
-		/// <seealso cref="SetEnv(byte[], byte[])">SetEnv(byte[], byte[])</seealso>
-		[System.ObsoleteAttribute(@"Use SetEnv(string, string) or SetEnv(byte[], byte[]) instead."
-			)]
+		/// <seealso cref="SetEnv(string, string)"/>
+		/// <seealso cref="SetEnv(byte[], byte[])"/>
+		[System.ObsoleteAttribute(@"Use SetEnv(string, string) or SetEnv(byte[], byte[]) instead.")]
 		public virtual void SetEnv(Hashtable env)
 		{
 			lock (this)
@@ -100,24 +100,27 @@ namespace NSch
 		/// <remarks>
 		/// Set the environment variable.
 		/// If <code>name</code> and <code>value</code> are needed to be passed
-		/// to the remote in your faivorite encoding,use
-		/// <see cref="SetEnv(byte[], byte[])">SetEnv(byte[], byte[])</see>
+		/// to the remote in your favorite encoding,
+		/// use
+		/// <see cref="SetEnv(byte[], byte[])"/>
 		/// .
+		/// Refer to RFC4254 6.4 Environment Variable Passing.
 		/// </remarks>
 		/// <param name="name">A name for environment variable.</param>
 		/// <param name="value">A value for environment variable.</param>
-		/// <seealso cref="RFC4254">6.4 Environment Variable Passing</seealso>
 		public virtual void SetEnv(string name, string value)
 		{
 			SetEnv(Util.Str2byte(name), Util.Str2byte(value));
 		}
 
 		/// <summary>Set the environment variable.</summary>
-		/// <remarks>Set the environment variable.</remarks>
+		/// <remarks>
+		/// Set the environment variable.
+		/// Refer to RFC4254 6.4 Environment Variable Passing.
+		/// </remarks>
 		/// <param name="name">A name of environment variable.</param>
 		/// <param name="value">A value of environment variable.</param>
-		/// <seealso cref="SetEnv(string, string)">SetEnv(string, string)</seealso>
-		/// <seealso cref="RFC4254">6.4 Environment Variable Passing</seealso>
+		/// <seealso cref="SetEnv(string, string)"/>
 		public virtual void SetEnv(byte[] name, byte[] value)
 		{
 			lock (this)
@@ -136,29 +139,32 @@ namespace NSch
 		}
 
 		/// <summary>Allocate a Pseudo-Terminal.</summary>
-		/// <remarks>Allocate a Pseudo-Terminal.</remarks>
-		/// <param name="enable"></param>
-		/// <seealso cref="RFC4254">6.2. Requesting a Pseudo-Terminal</seealso>
+		/// <remarks>
+		/// Allocate a Pseudo-Terminal.
+		/// Refer to RFC4254 6.2. Requesting a Pseudo-Terminal.
+		/// </remarks>
+		/// <param name="enable"/>
 		public virtual void SetPty(bool enable)
 		{
 			pty = enable;
 		}
 
 		/// <summary>Set the terminal mode.</summary>
-		/// <remarks>Set the terminal mode.</remarks>
-		/// <param name="terminal_mode"></param>
+		/// <param name="terminal_mode"/>
 		public virtual void SetTerminalMode(byte[] terminal_mode)
 		{
 			this.terminal_mode = terminal_mode;
 		}
 
 		/// <summary>Change the window dimension interactively.</summary>
-		/// <remarks>Change the window dimension interactively.</remarks>
+		/// <remarks>
+		/// Change the window dimension interactively.
+		/// Refer to RFC4254 6.7. Window Dimension Change Message.
+		/// </remarks>
 		/// <param name="col">terminal width, columns</param>
 		/// <param name="row">terminal height, rows</param>
 		/// <param name="wp">terminal width, pixels</param>
 		/// <param name="hp">terminal height, pixels</param>
-		/// <seealso cref="RFC4254">6.7. Window Dimension Change Message</seealso>
 		public virtual void SetPtySize(int col, int row, int wp, int hp)
 		{
 			SetPtyType(this.ttype, col, row, wp, hp);
@@ -184,8 +190,7 @@ namespace NSch
 		/// This method is not effective after Channel#connect().
 		/// </remarks>
 		/// <param name="ttype">terminal type(for example, "vt100")</param>
-		/// <seealso cref="SetPtyType(string, int, int, int, int)">SetPtyType(string, int, int, int, int)
-		/// 	</seealso>
+		/// <seealso cref="SetPtyType(string, int, int, int, int)"/>
 		public virtual void SetPtyType(string ttype)
 		{
 			SetPtyType(ttype, 80, 24, 640, 480);
@@ -210,7 +215,7 @@ namespace NSch
 			this.thp = hp;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		protected internal virtual void SendRequests()
 		{
 			Session _session = GetSession();
