@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -170,6 +170,12 @@ namespace NSch
 
 		private InputStream io_in = null;
 
+		private bool extension_posix_rename = false;
+
+		private bool extension_statvfs = false;
+
+		private bool extension_hardlink = false;
+
 		private static readonly string file_separator = FilePath.separator;
 
 		private static readonly char file_separatorc = FilePath.separatorChar;
@@ -191,8 +197,67 @@ namespace NSch
 		private ChannelSftp.RequestQueue rq;
 
 		// pflags
+/*
+   SSH_FX_OK
+      Indicates successful completion of the operation.
+   SSH_FX_EOF
+     indicates end-of-file condition; for SSH_FX_READ it means that no
+       more data is available in the file, and for SSH_FX_READDIR it
+      indicates that no more files are contained in the directory.
+   SSH_FX_NO_SUCH_FILE
+      is returned when a reference is made to a file which should exist
+      but doesn't.
+   SSH_FX_PERMISSION_DENIED
+      is returned when the authenticated user does not have sufficient
+      permissions to perform the operation.
+   SSH_FX_FAILURE
+      is a generic catch-all error message; it should be returned if an
+      error occurs for which there is no more specific error code
+      defined.
+   SSH_FX_BAD_MESSAGE
+      may be returned if a badly formatted packet or protocol
+      incompatibility is detected.
+   SSH_FX_NO_CONNECTION
+      is a pseudo-error which indicates that the client has no
+      connection to the server (it can only be generated locally by the
+      client, and MUST NOT be returned by servers).
+   SSH_FX_CONNECTION_LOST
+      is a pseudo-error which indicates that the connection to the
+      server has been lost (it can only be generated locally by the
+      client, and MUST NOT be returned by servers).
+   SSH_FX_OP_UNSUPPORTED
+      indicates that an attempt was made to perform an operation which
+      is not supported for the server (it may be generated locally by
+      the client if e.g.  the version number exchange indicates that a
+      required feature is not supported by the server, or it may be
+      returned by the server if the server does not implement an
+      operation).
+*/
 		// The followings will be used in file uploading.
-		/// <exception cref="NSch.JSchException"></exception>
+		// private boolean extension_fstatvfs = false;
+/*
+10. Changes from previous protocol versions
+  The SSH File Transfer Protocol has changed over time, before it's
+   standardization.  The following is a description of the incompatible
+   changes between different versions.
+10.1 Changes between versions 3 and 2
+   o  The SSH_FXP_READLINK and SSH_FXP_SYMLINK messages were added.
+   o  The SSH_FXP_EXTENDED and SSH_FXP_EXTENDED_REPLY messages were added.
+   o  The SSH_FXP_STATUS message was changed to include fields `error
+      message' and `language tag'.
+10.2 Changes between versions 2 and 1
+   o  The SSH_FXP_RENAME message was added.
+10.3 Changes between versions 1 and 0
+   o  Implementation changes, no actual protocol changes.
+*/
+		/// <summary>Specify how many requests may be sent at any one time.</summary>
+		/// <remarks>
+		/// Specify how many requests may be sent at any one time.
+		/// Increasing this value may slightly improve file transfer speed but will
+		/// increase memory usage.  The default is 16 requests.
+		/// </remarks>
+		/// <param name="bulk_requests">how many requests may be outstanding at any one time.</param>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetBulkRequests(int bulk_requests)
 		{
 			if (bulk_requests > 0)
@@ -201,11 +266,15 @@ namespace NSch
 			}
 			else
 			{
-				throw new JSchException("setBulkRequests: " + bulk_requests + " must be greater than 0."
-					);
+				throw new JSchException("setBulkRequests: " + bulk_requests + " must be greater than 0.");
 			}
 		}
 
+		/// <summary>
+		/// This method will return the value how many requests may be
+		/// sent at any one time.
+		/// </summary>
+		/// <returns>how many requests may be sent at any one time.</returns>
 		public virtual int GetBulkRequests()
 		{
 			return rq.Size();
@@ -213,7 +282,7 @@ namespace NSch
 
 		public ChannelSftp() : base()
 		{
-			rq = new ChannelSftp.RequestQueue(this, 10);
+			rq = new ChannelSftp.RequestQueue(this, 16);
 			SetLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
 			SetLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
 			SetLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
@@ -223,7 +292,7 @@ namespace NSch
 		{
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public override void Start()
 		{
 			try
@@ -255,16 +324,15 @@ namespace NSch
 				length = header.length;
 				if (length > MAX_MSG_LENGTH)
 				{
-					throw new SftpException(SSH_FX_FAILURE, "Received message is too long: " + length
-						);
+					throw new SftpException(SSH_FX_FAILURE, "Received message is too long: " + length);
 				}
 				type = header.type;
 				// 2 -> SSH_FXP_VERSION
 				server_version = header.rid;
 				//System.err.println("SFTP protocol server-version="+server_version);
+				extensions = new Hashtable();
 				if (length > 0)
 				{
-					extensions = new Hashtable();
 					// extension data
 					Fill(buf, length);
 					byte[] extension_name = null;
@@ -305,7 +373,7 @@ namespace NSch
 			Disconnect();
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Lcd(string path)
 		{
 			path = LocalAbsolutePath(path);
@@ -324,7 +392,7 @@ namespace NSch
 			throw new SftpException(SSH_FX_NO_SUCH_FILE, "No such directory");
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Cd(string path)
 		{
 			try
@@ -358,27 +426,36 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(string src, string dst)
 		{
 			Put(src, dst, null, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(string src, string dst, int mode)
 		{
 			Put(src, dst, null, mode);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(string src, string dst, SftpProgressMonitor monitor)
 		{
 			Put(src, dst, monitor, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void Put(string src, string dst, SftpProgressMonitor monitor, int 
-			mode)
+		/// <summary>Sends data from <code>src</code> file to <code>dst</code> file.</summary>
+		/// <remarks>
+		/// Sends data from <code>src</code> file to <code>dst</code> file.
+		/// The <code>mode</code> should be <code>OVERWRITE</code>,
+		/// <code>RESUME</code> or <code>APPEND</code>.
+		/// </remarks>
+		/// <param name="src">source file</param>
+		/// <param name="dst">destination file</param>
+		/// <param name="monitor">progress monitor</param>
+		/// <param name="mode">how data should be added to dst</param>
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void Put(string src, string dst, SftpProgressMonitor monitor, int mode)
 		{
 			try
 			{
@@ -422,8 +499,7 @@ namespace NSch
 				{
 					if (vsize > 1)
 					{
-						throw new SftpException(SSH_FX_FAILURE, "Copying multiple files, but the destination is missing or a file."
-							);
+						throw new SftpException(SSH_FX_FAILURE, "Copying multiple files, but the destination is missing or a file.");
 					}
 				}
 				for (int j = 0; j < vsize; j++)
@@ -516,27 +592,36 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(InputStream src, string dst)
 		{
 			Put(src, dst, null, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(InputStream src, string dst, int mode)
 		{
 			Put(src, dst, null, mode);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Put(InputStream src, string dst, SftpProgressMonitor monitor)
 		{
 			Put(src, dst, monitor, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void Put(InputStream src, string dst, SftpProgressMonitor monitor, 
-			int mode)
+		/// <summary>Sends data from the input stream <code>src</code> to <code>dst</code> file.</summary>
+		/// <remarks>
+		/// Sends data from the input stream <code>src</code> to <code>dst</code> file.
+		/// The <code>mode</code> should be <code>OVERWRITE</code>,
+		/// <code>RESUME</code> or <code>APPEND</code>.
+		/// </remarks>
+		/// <param name="src">input stream</param>
+		/// <param name="dst">destination file</param>
+		/// <param name="monitor">progress monitor</param>
+		/// <param name="mode">how data should be added to dst</param>
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void Put(InputStream src, string dst, SftpProgressMonitor monitor, int mode)
 		{
 			try
 			{
@@ -587,9 +672,8 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void _put(InputStream src, string dst, SftpProgressMonitor monitor
-			, int mode)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void _put(InputStream src, string dst, SftpProgressMonitor monitor, int mode)
 		{
 			try
 			{
@@ -645,8 +729,7 @@ namespace NSch
 				if (!dontcopy)
 				{
 					// This case will not work anymore.
-					data = new byte[obuf.buffer.Length - (5 + 13 + 21 + handle.Length + Session.buffer_margin
-						)];
+					data = new byte[obuf.buffer.Length - (5 + 13 + 21 + handle.Length + Session.buffer_margin)];
 				}
 				long offset = 0;
 				if (mode == RESUME || mode == APPEND)
@@ -708,13 +791,11 @@ namespace NSch
 									{
 										if (_ackid == seq)
 										{
-											System.Console.Error.WriteLine("ack error: startid=" + startid + " seq=" + seq + 
-												" _ackid=" + _ackid);
+											System.Console.Error.WriteLine("ack error: startid=" + startid + " seq=" + seq + " _ackid=" + _ackid);
 										}
 										else
 										{
-											throw new SftpException(SSH_FX_FAILURE, "ack error: startid=" + startid + " seq="
-												 + seq + " _ackid=" + _ackid);
+											throw new SftpException(SSH_FX_FAILURE, "ack error: startid=" + startid + " seq=" + seq + " _ackid=" + _ackid);
 										}
 									}
 									ackcount++;
@@ -762,28 +843,37 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual OutputStream Put(string dst)
 		{
 			return Put(dst, (SftpProgressMonitor)null, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual OutputStream Put(string dst, int mode)
 		{
 			return Put(dst, (SftpProgressMonitor)null, mode);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual OutputStream Put(string dst, SftpProgressMonitor monitor, int mode
-			)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual OutputStream Put(string dst, SftpProgressMonitor monitor, int mode)
 		{
 			return Put(dst, monitor, mode, 0);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual OutputStream Put(string dst, SftpProgressMonitor monitor, int mode
-			, long offset)
+		/// <summary>Sends data from the output stream to <code>dst</code> file.</summary>
+		/// <remarks>
+		/// Sends data from the output stream to <code>dst</code> file.
+		/// The <code>mode</code> should be <code>OVERWRITE</code>,
+		/// <code>RESUME</code> or <code>APPEND</code>.
+		/// </remarks>
+		/// <param name="dst">destination file</param>
+		/// <param name="monitor">progress monitor</param>
+		/// <param name="mode">how data should be added to dst</param>
+		/// <param name="offset">data will be added at offset</param>
+		/// <returns>output stream, which accepts data to be transferred.</returns>
+		/// <exception cref="NSch.SftpException"/>
+		public virtual OutputStream Put(string dst, SftpProgressMonitor monitor, int mode, long offset)
 		{
 			try
 			{
@@ -838,7 +928,7 @@ namespace NSch
 				}
 				long[] _offset = new long[1];
 				_offset[0] = offset;
-				OutputStream @out = new _OutputStream_686(this, handle, _offset, monitor);
+				OutputStream @out = new _OutputStream_778(this, handle, _offset, monitor);
 				return @out;
 			}
 			catch (Exception e)
@@ -855,10 +945,9 @@ namespace NSch
 			}
 		}
 
-		private sealed class _OutputStream_686 : OutputStream
+		private sealed class _OutputStream_778 : OutputStream
 		{
-			public _OutputStream_686(ChannelSftp _enclosing, byte[] handle, long[] _offset, SftpProgressMonitor
-				 monitor)
+			public _OutputStream_778(ChannelSftp _enclosing, byte[] handle, long[] _offset, SftpProgressMonitor monitor)
 			{
 				this._enclosing = _enclosing;
 				this.handle = handle;
@@ -891,13 +980,13 @@ namespace NSch
 
 			private ChannelHeader header;
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Write(byte[] d)
 			{
 				this.Write(d, 0, d.Length);
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Write(byte[] d, int s, int len)
 			{
 				if (this.init)
@@ -920,8 +1009,7 @@ namespace NSch
 						_offset[0] += sent;
 						s += sent;
 						_len -= sent;
-						if ((this._enclosing.seq - 1) == this.startid || this._enclosing.io_in.Available(
-							) >= 1024)
+						if ((this._enclosing.seq - 1) == this.startid || this._enclosing.io_in.Available() >= 1024)
 						{
 							while (this._enclosing.io_in.Available() > 0)
 							{
@@ -959,14 +1047,14 @@ namespace NSch
 
 			internal byte[] _data;
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Write(int foo)
 			{
 				this._data[0] = unchecked((byte)foo);
 				this.Write(this._data, 0, 1);
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Flush()
 			{
 				if (this.isClosed)
@@ -993,7 +1081,7 @@ namespace NSch
 				}
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Close()
 			{
 				if (this.isClosed)
@@ -1029,21 +1117,20 @@ namespace NSch
 			private readonly SftpProgressMonitor monitor;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Get(string src, string dst)
 		{
 			Get(src, dst, null, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Get(string src, string dst, SftpProgressMonitor monitor)
 		{
 			Get(src, dst, monitor, OVERWRITE);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void Get(string src, string dst, SftpProgressMonitor monitor, int 
-			mode)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void Get(string src, string dst, SftpProgressMonitor monitor, int mode)
 		{
 			// System.out.println("get: "+src+" "+dst);
 			bool _dstExist = false;
@@ -1074,8 +1161,7 @@ namespace NSch
 				{
 					if (vsize > 1)
 					{
-						throw new SftpException(SSH_FX_FAILURE, "Copying multiple files, but destination is missing or a file."
-							);
+						throw new SftpException(SSH_FX_FAILURE, "Copying multiple files, but destination is missing or a file.");
 					}
 				}
 				for (int j = 0; j < vsize; j++)
@@ -1174,22 +1260,20 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Get(string src, OutputStream dst)
 		{
 			Get(src, dst, null, OVERWRITE, 0);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void Get(string src, OutputStream dst, SftpProgressMonitor monitor
-			)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void Get(string src, OutputStream dst, SftpProgressMonitor monitor)
 		{
 			Get(src, dst, monitor, OVERWRITE, 0);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual void Get(string src, OutputStream dst, SftpProgressMonitor monitor
-			, int mode, long skip)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void Get(string src, OutputStream dst, SftpProgressMonitor monitor, int mode, long skip)
 		{
 			//System.err.println("get: "+src+", "+dst);
 			try
@@ -1222,9 +1306,8 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		private void _get(string src, OutputStream dst, SftpProgressMonitor monitor, int 
-			mode, long skip)
+		/// <exception cref="NSch.SftpException"/>
+		private void _get(string src, OutputStream dst, SftpProgressMonitor monitor, int mode, long skip)
 		{
 			//System.err.println("_get: "+src+", "+dst);
 			byte[] srcb = Util.Str2byte(src, fEncoding);
@@ -1329,8 +1412,7 @@ namespace NSch
 					{
 						//
 						rq.Cancel(header, buf);
-						SendREAD(handle, rr.offset + length_of_data, (int)(rr.length - length_of_data), rq
-							);
+						SendREAD(handle, rr.offset + length_of_data, (int)(rr.length - length_of_data), rq);
 						request_offset = rr.offset + rr.length;
 					}
 					if (request_max < rq.Size())
@@ -1419,6 +1501,8 @@ loop_break: ;
 				this.count++;
 			}
 
+			/// <exception cref="NSch.ChannelSftp.RequestQueue.OutOfOrderException"/>
+			/// <exception cref="NSch.SftpException"/>
 			internal virtual ChannelSftp.RequestQueue.Request Get(int id)
 			{
 				this.count -= 1;
@@ -1446,7 +1530,7 @@ loop_break: ;
 				return this.rrq.Length;
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			internal virtual void Cancel(ChannelHeader header, Buffer buf)
 			{
 				int _count = this.count;
@@ -1462,35 +1546,34 @@ loop_break: ;
 			private readonly ChannelSftp _enclosing;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual InputStream Get(string src)
 		{
 			return Get(src, null, 0L);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual InputStream Get(string src, SftpProgressMonitor monitor)
 		{
 			return Get(src, monitor, 0L);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		[System.ObsoleteAttribute(@"This method will be deleted in the future.")]
 		public virtual InputStream Get(string src, int mode)
 		{
 			return Get(src, null, 0L);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		[System.ObsoleteAttribute(@"This method will be deleted in the future.")]
 		public virtual InputStream Get(string src, SftpProgressMonitor monitor, int mode)
 		{
 			return Get(src, monitor, 0L);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		public virtual InputStream Get(string src, SftpProgressMonitor monitor, long skip
-			)
+		/// <exception cref="NSch.SftpException"/>
+		public virtual InputStream Get(string src, SftpProgressMonitor monitor, long skip)
 		{
 			try
 			{
@@ -1522,6 +1605,7 @@ loop_break: ;
 				// handle
 				InputStream @in = new _InputStream_1195(this, skip, monitor, handle);
 				//throwStatusError(buf, i);
+				//
 				// ??
 				return @in;
 			}
@@ -1541,8 +1625,7 @@ loop_break: ;
 
 		private sealed class _InputStream_1195 : InputStream
 		{
-			public _InputStream_1195(ChannelSftp _enclosing, long skip, SftpProgressMonitor monitor
-				, byte[] handle)
+			public _InputStream_1195(ChannelSftp _enclosing, long skip, SftpProgressMonitor monitor, byte[] handle)
 			{
 				this._enclosing = _enclosing;
 				this.skip = skip;
@@ -1568,7 +1651,11 @@ loop_break: ;
 
 			internal ChannelHeader header;
 
-			/// <exception cref="System.IO.IOException"></exception>
+			internal int request_max;
+
+			internal long request_offset;
+
+			/// <exception cref="System.IO.IOException"/>
 			public override int Read()
 			{
 				if (this.closed)
@@ -1586,7 +1673,7 @@ loop_break: ;
 				}
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override int Read(byte[] d)
 			{
 				if (this.closed)
@@ -1596,7 +1683,7 @@ loop_break: ;
 				return this.Read(d, 0, d.Length);
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override int Read(byte[] d, int s, int len)
 			{
 				if (this.closed)
@@ -1732,7 +1819,7 @@ loop_break: ;
 				return 0;
 			}
 
-			/// <exception cref="System.IO.IOException"></exception>
+			/// <exception cref="System.IO.IOException"/>
 			public override void Close()
 			{
 				if (this.closed)
@@ -1763,7 +1850,7 @@ loop_break: ;
 			private readonly byte[] handle;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual ArrayList Ls(string path)
 		{
 			//System.out.println("ls: "+path);
@@ -1858,8 +1945,7 @@ loop_break: ;
 						if (length > 0)
 						{
 							buf.Shift();
-							int j = (buf.buffer.Length > (buf.index + length)) ? length : (buf.buffer.Length 
-								- buf.index);
+							int j = (buf.buffer.Length > (buf.index + length)) ? length : (buf.buffer.Length - buf.index);
 							int i = Fill(buf.buffer, buf.index, j);
 							buf.index += i;
 							length -= i;
@@ -1933,15 +2019,14 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual string Readlink(string path)
 		{
 			try
 			{
 				if (server_version < 3)
 				{
-					throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support symlink operation."
-						);
+					throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support symlink operation.");
 				}
 				((Channel.MyPipedInputStream)io_in).UpdateReadSide();
 				path = RemoteAbsolutePath(path);
@@ -1990,13 +2075,12 @@ loop_break: ;
 			return null;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Symlink(string oldpath, string newpath)
 		{
 			if (server_version < 3)
 			{
-				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support symlink operation."
-					);
+				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support symlink operation.");
 			}
 			try
 			{
@@ -2040,13 +2124,12 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Rename(string oldpath, string newpath)
 		{
 			if (server_version < 2)
 			{
-				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support rename operation."
-					);
+				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "The remote sshd is too old to support rename operation.");
 			}
 			try
 			{
@@ -2104,7 +2187,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Rm(string path)
 		{
 			try
@@ -2170,7 +2253,7 @@ loop_break: ;
 			return false;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Chgrp(int gid, string path)
 		{
 			try
@@ -2202,7 +2285,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Chown(int uid, string path)
 		{
 			try
@@ -2234,7 +2317,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Chmod(int permissions, string path)
 		{
 			try
@@ -2266,7 +2349,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void SetMtime(string path, int mtime)
 		{
 			try
@@ -2298,7 +2381,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Rmdir(string path)
 		{
 			try
@@ -2341,7 +2424,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Mkdir(string path)
 		{
 			try
@@ -2379,7 +2462,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual SftpATTRS Stat(string path)
 		{
 			try
@@ -2404,7 +2487,7 @@ loop_break: ;
 		}
 
 		//return null;
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private SftpATTRS _stat(byte[] path)
 		{
 			try
@@ -2442,13 +2525,13 @@ loop_break: ;
 		}
 
 		//return null;
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private SftpATTRS _stat(string path)
 		{
 			return _stat(Util.Str2byte(path, fEncoding));
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual SftpATTRS Lstat(string path)
 		{
 			try
@@ -2472,7 +2555,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private SftpATTRS _lstat(string path)
 		{
 			try
@@ -2509,9 +2592,9 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
-		/// <exception cref="System.IO.IOException"></exception>
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="NSch.SftpException"/>
+		/// <exception cref="System.IO.IOException"/>
+		/// <exception cref="System.Exception"/>
 		private byte[] _realpath(string path)
 		{
 			SendREALPATH(Util.Str2byte(path, fEncoding));
@@ -2548,7 +2631,7 @@ loop_break: ;
 			return str;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void SetStat(string path, SftpATTRS attr)
 		{
 			try
@@ -2577,7 +2660,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private void _setStat(string path, SftpATTRS attr)
 		{
 			try
@@ -2612,7 +2695,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual string Pwd()
 		{
 			return GetCwd();
@@ -2628,7 +2711,7 @@ loop_break: ;
 //			return version;
 //		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual string GetHome()
 		{
 			if (home == null)
@@ -2655,7 +2738,7 @@ loop_break: ;
 			return home;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private string GetCwd()
 		{
 			if (cwd == null)
@@ -2670,8 +2753,8 @@ loop_break: ;
 			this.cwd = cwd;
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="System.IO.IOException"/>
+		/// <exception cref="NSch.SftpException"/>
 		private void Read(byte[] buf, int s, int l)
 		{
 			int i = 0;
@@ -2687,8 +2770,8 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="System.IO.IOException"/>
+		/// <exception cref="NSch.SftpException"/>
 		private bool CheckStatus(int[] ackid, ChannelHeader header)
 		{
 			header = Header(buf, header);
@@ -2711,14 +2794,14 @@ loop_break: ;
 			return true;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private bool _sendCLOSE(byte[] handle, ChannelHeader header)
 		{
 			SendCLOSE(handle);
 			return CheckStatus(null, header);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendINIT()
 		{
 			packet.Reset();
@@ -2728,31 +2811,31 @@ loop_break: ;
 			GetSession().Write(packet, this, 5 + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendREALPATH(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_REALPATH, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendSTAT(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_STAT, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendLSTAT(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_LSTAT, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendFSTAT(byte[] handle)
 		{
 			SendPacketPath(SSH_FXP_FSTAT, handle);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendSETSTAT(byte[] path, SftpATTRS attr)
 		{
 			packet.Reset();
@@ -2764,13 +2847,13 @@ loop_break: ;
 			GetSession().Write(packet, this, 9 + path.Length + attr.Length() + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendREMOVE(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_REMOVE, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendMKDIR(byte[] path, SftpATTRS attr)
 		{
 			packet.Reset();
@@ -2786,71 +2869,70 @@ loop_break: ;
 			{
 				buf.PutInt(0);
 			}
-			GetSession().Write(packet, this, 9 + path.Length + (attr != null ? attr.Length() : 
-				4) + 4);
+			GetSession().Write(packet, this, 9 + path.Length + (attr != null ? attr.Length() : 4) + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendRMDIR(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_RMDIR, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendSYMLINK(byte[] p1, byte[] p2)
 		{
 			SendPacketPath(SSH_FXP_SYMLINK, p1, p2);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendREADLINK(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_READLINK, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendOPENDIR(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_OPENDIR, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendREADDIR(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_READDIR, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendRENAME(byte[] p1, byte[] p2)
 		{
 			SendPacketPath(SSH_FXP_RENAME, p1, p2);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendCLOSE(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_CLOSE, path);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendOPENR(byte[] path)
 		{
 			SendOPEN(path, SSH_FXF_READ);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendOPENW(byte[] path)
 		{
 			SendOPEN(path, SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_TRUNC);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendOPENA(byte[] path)
 		{
 			SendOPEN(path, SSH_FXF_WRITE | SSH_FXF_CREAT);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendOPEN(byte[] path, int mode)
 		{
 			packet.Reset();
@@ -2863,7 +2945,7 @@ loop_break: ;
 			GetSession().Write(packet, this, 17 + path.Length + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendPacketPath(byte fxp, byte[] path)
 		{
 			packet.Reset();
@@ -2874,7 +2956,7 @@ loop_break: ;
 			GetSession().Write(packet, this, 9 + path.Length + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendPacketPath(byte fxp, byte[] p1, byte[] p2)
 		{
 			packet.Reset();
@@ -2885,17 +2967,14 @@ loop_break: ;
 			GetSession().Write(packet, this, 13 + p1.Length + p2.Length + 4);
 		}
 
-		/// <exception cref="System.Exception"></exception>
-		private int SendWRITE(byte[] handle, long offset, byte[] data, int start, int length
-			)
+		/// <exception cref="System.Exception"/>
+		private int SendWRITE(byte[] handle, long offset, byte[] data, int start, int length)
 		{
 			int _length = length;
 			opacket.Reset();
-			if (obuf.buffer.Length < obuf.index + 13 + 21 + handle.Length + length + Session.
-				buffer_margin)
+			if (obuf.buffer.Length < obuf.index + 13 + 21 + handle.Length + length + Session.buffer_margin)
 			{
-				_length = obuf.buffer.Length - (obuf.index + 13 + 21 + handle.Length + Session.buffer_margin
-					);
+				_length = obuf.buffer.Length - (obuf.index + 13 + 21 + handle.Length + Session.buffer_margin);
 			}
 			// System.err.println("_length="+_length+" length="+length);
 			PutHEAD(obuf, SSH_FXP_WRITE, 21 + handle.Length + _length);
@@ -2920,15 +2999,14 @@ loop_break: ;
 			return _length;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void SendREAD(byte[] handle, long offset, int length)
 		{
 			SendREAD(handle, offset, length, null);
 		}
 
-		/// <exception cref="System.Exception"></exception>
-		private void SendREAD(byte[] handle, long offset, int length, ChannelSftp.RequestQueue
-			 rrq)
+		/// <exception cref="System.Exception"/>
+		private void SendREAD(byte[] handle, long offset, int length, ChannelSftp.RequestQueue rrq)
 		{
 			packet.Reset();
 			PutHEAD(SSH_FXP_READ, 21 + handle.Length);
@@ -2943,7 +3021,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void PutHEAD(Buffer buf, byte type, int length)
 		{
 			buf.PutByte(unchecked((byte)Session.SSH_MSG_CHANNEL_DATA));
@@ -2953,13 +3031,13 @@ loop_break: ;
 			buf.PutByte(type);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void PutHEAD(byte type, int length)
 		{
 			PutHEAD(buf, type, length);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private ArrayList Glob_remote(string _path)
 		{
 			ArrayList v = new ArrayList();
@@ -3033,8 +3111,7 @@ loop_break: ;
 					if (length > 0)
 					{
 						buf.Shift();
-						int j = (buf.buffer.Length > (buf.index + length)) ? length : (buf.buffer.Length 
-							- buf.index);
+						int j = (buf.buffer.Length > (buf.index + length)) ? length : (buf.buffer.Length - buf.index);
 						i = io_in.Read(buf.buffer, buf.index, j);
 						if (i <= 0)
 						{
@@ -3105,7 +3182,7 @@ loop_break: ;
 			return false;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private ArrayList Glob_local(string _path)
 		{
 			//System.err.println("glob_local: "+_path);
@@ -3182,7 +3259,7 @@ loop_break: ;
 			return v;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private void ThrowStatusError(Buffer buf, int i)
 		{
 			if (server_version >= 3 && buf.GetLength() >= 4)
@@ -3224,7 +3301,7 @@ loop_break: ;
 			return IsPattern(path, null);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		private void Fill(Buffer buf, int len)
 		{
 			buf.Reset();
@@ -3232,7 +3309,7 @@ loop_break: ;
 			buf.Skip(len);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		private int Fill(byte[] buf, int s, int len)
 		{
 			int i = 0;
@@ -3251,7 +3328,7 @@ loop_break: ;
 			return s - foo;
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		private void Skip(long foo)
 		{
 			while (foo > 0)
@@ -3265,7 +3342,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		private ChannelHeader Header(Buffer buf, ChannelHeader header)
 		{
 			buf.Rewind();
@@ -3276,7 +3353,7 @@ loop_break: ;
 			return header;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		private string RemoteAbsolutePath(string path)
 		{
 			if (path[0] == '/')
@@ -3315,8 +3392,8 @@ loop_break: ;
 		/// will be thrown.
 		/// </remarks>
 		/// <returns>the returned string is unquoted.</returns>
-		/// <exception cref="NSch.SftpException"></exception>
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="NSch.SftpException"/>
+		/// <exception cref="System.Exception"/>
 		private string IsUnique(string path)
 		{
 			ArrayList v = Glob_remote(path);
@@ -3327,7 +3404,7 @@ loop_break: ;
 			return (string)(v[0]);
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual int GetServerVersion()
 		{
 			if (!IsConnected())
@@ -3337,14 +3414,13 @@ loop_break: ;
 			return server_version;
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void SetFilenameEncoding(string encoding)
 		{
 			int sversion = GetServerVersion();
 			if (3 <= sversion && sversion <= 5 && !encoding.Equals(UTF8))
 			{
-				throw new SftpException(SSH_FX_FAILURE, "The encoding can not be changed for this sftp server."
-					);
+				throw new SftpException(SSH_FX_FAILURE, "The encoding can not be changed for this sftp server.");
 			}
 			if (encoding.Equals(UTF8))
 			{
@@ -3363,7 +3439,7 @@ loop_break: ;
 			return (string)extensions[key];
 		}
 
-		/// <exception cref="NSch.SftpException"></exception>
+		/// <exception cref="NSch.SftpException"/>
 		public virtual string Realpath(string path)
 		{
 			try
@@ -3393,8 +3469,7 @@ loop_break: ;
 
 			private SftpATTRS attrs;
 
-			internal LsEntry(ChannelSftp _enclosing, string filename, string longname, SftpATTRS
-				 attrs)
+			internal LsEntry(ChannelSftp _enclosing, string filename, string longname, SftpATTRS attrs)
 			{
 				this._enclosing = _enclosing;
 				this.SetFilename(filename);
@@ -3437,13 +3512,12 @@ loop_break: ;
 				return this.longname;
 			}
 
-			/// <exception cref="System.InvalidCastException"></exception>
+			/// <exception cref="System.InvalidCastException"/>
 			public virtual int CompareTo(object o)
 			{
 				if (o is ChannelSftp.LsEntry)
 				{
-					return Sharpen.Runtime.CompareOrdinal(this.filename, ((ChannelSftp.LsEntry)o).GetFilename
-						());
+					return Sharpen.Runtime.CompareOrdinal(this.filename, ((ChannelSftp.LsEntry)o).GetFilename());
 				}
 				throw new InvalidCastException("a decendent of LsEntry must be given.");
 			}
