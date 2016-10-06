@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,8 +34,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Security;
+using System.Text;
 using System.Threading;
-using NSch;
 using Sharpen;
 
 namespace NSch
@@ -176,7 +177,7 @@ namespace NSch
 
 		internal SocketFactory socket_factory = null;
 
-		internal const int buffer_margin = 32 + 20 + 32;
+		internal const int buffer_margin = 32 + 64 + 32;
 
 		private Hashtable config = null;
 
@@ -200,6 +201,8 @@ namespace NSch
 
 		internal string host = "127.0.0.1";
 
+		internal string org_host = "127.0.0.1";
+
 		internal int port = 22;
 
 		internal string username = null;
@@ -208,7 +211,7 @@ namespace NSch
 
 		internal JSch jsch;
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal Session(JSch jsch) : base()
 		{
 			grr = new Session.GlobalRequestReply(this);
@@ -227,13 +230,13 @@ namespace NSch
 			packet = new Packet(buf);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void Connect()
 		{
 			Connect(timeout);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void Connect(int connectTimeout)
 		{
 			if (isConnected)
@@ -640,7 +643,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private KeyExchange Receive_kexinit(Buffer buf)
 		{
 			int j = buf.GetInt();
@@ -688,13 +691,13 @@ loop_break: ;
 
 		private bool in_kex = false;
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void Rekey()
 		{
 			Send_kexinit();
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void Send_kexinit()
 		{
 			if (in_kex)
@@ -770,7 +773,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void Send_newkeys()
 		{
 			// send SSH_MSG_NEWKEYS(21)
@@ -783,7 +786,7 @@ loop_break: ;
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		private void CheckHost(string chost, int port, KeyExchange kex)
 		{
 			string shkc = GetConfig("StrictHostKeyChecking");
@@ -913,7 +916,7 @@ loop_break: ;
 		}
 
 		//public void start(){ (new Thread(this)).start();  }
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual Channel OpenChannel(string type)
 		{
 			if (!isConnected)
@@ -935,7 +938,7 @@ loop_break: ;
 		}
 
 		// encode will bin invoked in write with synchronization.
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void Encode(Packet packet)
 		{
 			//System.err.println("encode: "+packet.buffer.getCommand());
@@ -988,7 +991,7 @@ loop_break: ;
 
 		private int c2scipher_size = 8;
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual Buffer Read(Buffer buf)
 		{
 			int j = 0;
@@ -1157,8 +1160,8 @@ loop_break: ;
 			return buf;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="NSch.JSchException"/>
+		/// <exception cref="System.IO.IOException"/>
 		private void Start_discard(Buffer buf, NSch.Cipher cipher, MAC mac, int packet_length
 			, int discard)
 		{
@@ -1195,14 +1198,14 @@ loop_break: ;
 			return session_id;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void Receive_newkeys(Buffer buf, KeyExchange kex)
 		{
 			UpdateKeys(kex);
 			in_kex = false;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void UpdateKeys(KeyExchange kex)
 		{
 			byte[] K = kex.GetK();
@@ -1304,7 +1307,7 @@ loop_break: ;
 		}
 
 		//System.err.println("updatekeys: "+e); 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		internal virtual void Write(Packet packet, Channel c, int length)
 		{
 			long t = GetTimeout();
@@ -1412,7 +1415,7 @@ loop_break: ;
 			_write(packet);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void Write(Packet packet)
 		{
 			// System.err.println("in_kex="+in_kex+" "+(packet.buffer.getCommand()));
@@ -1443,7 +1446,7 @@ loop_break: ;
 			_write(packet);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		private void _write(Packet packet)
 		{
 			lock (Lock)
@@ -1932,20 +1935,20 @@ loop_break: ;
 		}
 
 		//System.gc();
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual int SetPortForwardingL(int lport, string host, int rport)
 		{
 			return SetPortForwardingL("127.0.0.1", lport, host, rport);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual int SetPortForwardingL(string boundaddress, int lport, string host
 			, int rport)
 		{
 			return SetPortForwardingL(boundaddress, lport, host, rport, null);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual int SetPortForwardingL(string boundaddress, int lport, string host
 			, int rport, ServerSocketFactory ssf)
 		{
@@ -1960,70 +1963,135 @@ loop_break: ;
 			return pw.lport;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void DelPortForwardingL(int lport)
 		{
 			DelPortForwardingL("127.0.0.1", lport);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void DelPortForwardingL(string boundaddress, int lport)
 		{
 			PortWatcher.DelPort(this, boundaddress, lport);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual string[] GetPortForwardingL()
 		{
 			return PortWatcher.GetPortForwarding(this);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string host, int lport)
 		{
 			SetPortForwardingR(null, rport, host, lport, (SocketFactory)null);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(string bind_address, int rport, string host
 			, int lport)
 		{
 			SetPortForwardingR(bind_address, rport, host, lport, (SocketFactory)null);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string host, int lport, SocketFactory
 			 sf)
 		{
 			SetPortForwardingR(null, rport, host, lport, sf);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
-		public virtual void SetPortForwardingR(string bind_address, int rport, string host
-			, int lport, SocketFactory sf)
+		// TODO: This method should return the integer value as the assigned port.
+		/// <summary>Registers the remote port forwarding.</summary>
+		/// <remarks>
+		/// Registers the remote port forwarding.
+		/// If <code>bind_address</code> is an empty string or <code>"*"</code>,
+		/// the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or is not given,
+		/// the listening port will be bound for local use only.
+		/// Note that if <code>GatewayPorts</code> is <code>"no"</code> on the
+		/// remote, <code>"localhost"</code> is always used as a bind_address.
+		/// If <code>rport</code> is <code>0</code>, the TCP port will be allocated on the remote.
+		/// </remarks>
+		/// <param name="bind_address">bind address</param>
+		/// <param name="rport">remote port</param>
+		/// <param name="host">host address</param>
+		/// <param name="lport">local port</param>
+		/// <param name="sf">socket factory</param>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual void SetPortForwardingR(string bind_address, int rport, string host, int lport, SocketFactory sf)
 		{
-			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, host, lport, sf);
-			SetPortForwarding(bind_address, rport);
+			int allocated = SetPortForwarding(bind_address, rport);
+			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, allocated, host, lport, sf);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// </summary>
+		/// <remarks>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// The TCP connection to <code>rport</code> on the remote will be
+		/// forwarded to an instance of the class <code>daemon</code>.
+		/// The class specified by <code>daemon</code> must implement
+		/// <code>ForwardedTCPIPDaemon</code>.
+		/// </remarks>
+		/// <param name="rport">remote port</param>
+		/// <param name="daemon">class name, which implements "ForwardedTCPIPDaemon"</param>
+		/// <seealso cref="SetPortForwardingR(string, int, string, object[])"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string daemon)
 		{
 			SetPortForwardingR(null, rport, daemon, null);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// </summary>
+		/// <remarks>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// The TCP connection to <code>rport</code> on the remote will be
+		/// forwarded to an instance of the class <code>daemon</code> with
+		/// the argument <code>arg</code>.
+		/// The class specified by <code>daemon</code> must implement <code>ForwardedTCPIPDaemon</code>.
+		/// </remarks>
+		/// <param name="rport">remote port</param>
+		/// <param name="daemon">class name, which implements "ForwardedTCPIPDaemon"</param>
+		/// <param name="arg">arguments for "daemon"</param>
+		/// <seealso cref="SetPortForwardingR(string, int, string, object[])"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string daemon, object[] arg)
 		{
 			SetPortForwardingR(null, rport, daemon, arg);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
-		public virtual void SetPortForwardingR(string bind_address, int rport, string daemon
-			, object[] arg)
+		/// <summary>Registers the remote port forwarding.</summary>
+		/// <remarks>
+		/// Registers the remote port forwarding.
+		/// If <code>bind_address</code> is an empty string
+		/// or <code>"*"</code>, the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or is not given,
+		/// the listening port will be bound for local use only.
+		/// Note that if <code>GatewayPorts</code> is <code>"no"</code> on the
+		/// remote, <code>"localhost"</code> is always used as a bind_address.
+		/// The TCP connection to <code>rport</code> on the remote will be
+		/// forwarded to an instance of the class <code>daemon</code> with the
+		/// argument <code>arg</code>.
+		/// The class specified by <code>daemon</code> must implement <code>ForwardedTCPIPDaemon</code>.
+		/// </remarks>
+		/// <param name="bind_address">bind address</param>
+		/// <param name="rport">remote port</param>
+		/// <param name="daemon">class name, which implements "ForwardedTCPIPDaemon"</param>
+		/// <param name="arg">arguments for "daemon"</param>
+		/// <seealso cref="SetPortForwardingR(string, int, string, object[])"/>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual void SetPortForwardingR(string bind_address, int rport, string daemon, object[] arg)
 		{
-			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, daemon, arg);
-			SetPortForwarding(bind_address, rport);
+			int allocated = SetPortForwarding(bind_address, rport);
+			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, allocated, daemon, arg);
 		}
 
 		private class GlobalRequestReply
@@ -2031,6 +2099,8 @@ loop_break: ;
 			private Sharpen.Thread thread = null;
 
 			private int reply = -1;
+
+			private int port = 0;
 
 			internal virtual void SetThread(Sharpen.Thread thread)
 			{
@@ -2053,6 +2123,16 @@ loop_break: ;
 				return this.reply;
 			}
 
+			internal virtual int GetPort()
+			{
+				return this.port;
+			}
+
+			internal virtual void SetPort(int port)
+			{
+				this.port = port;
+			}
+
 			internal GlobalRequestReply(Session _enclosing)
 			{
 				this._enclosing = _enclosing;
@@ -2063,8 +2143,8 @@ loop_break: ;
 
 		private Session.GlobalRequestReply grr;
 
-		/// <exception cref="NSch.JSchException"></exception>
-		private void SetPortForwarding(string bind_address, int rport)
+		/// <exception cref="NSch.JSchException"/>
+		private int SetPortForwarding(string bind_address, int rport)
 		{
 			lock (grr)
 			{
@@ -2073,6 +2153,7 @@ loop_break: ;
 				Packet packet = new Packet(buf);
 				string address_to_bind = ChannelForwardedTCPIP.Normalize(bind_address);
 				grr.SetThread(Sharpen.Thread.CurrentThread());
+				grr.SetPort(rport);
 				try
 				{
 					// byte SSH_MSG_GLOBAL_REQUEST 80
@@ -2116,16 +2197,18 @@ loop_break: ;
 				{
 					throw new JSchException("remote port forwarding failed for listen port " + rport);
 				}
+				rport = grr.GetPort();
 			}
+			return rport;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void DelPortForwardingR(int rport)
 		{
 			ChannelForwardedTCPIP.DelPort(this, rport);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		private void InitDeflater(string method)
 		{
 			if (method.Equals("none"))
@@ -2161,7 +2244,7 @@ loop_break: ;
 		}
 
 		//System.err.println(foo+" isn't accessible.");
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		private void InitInflater(string method)
 		{
 			if (method.Equals("none"))
@@ -2333,7 +2416,7 @@ loop_break: ;
 			return timeout;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetTimeout(int timeout)
 		{
 			if (socket == null)
@@ -2375,7 +2458,7 @@ loop_break: ;
 			V_C = Util.Str2byte(cv);
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void SendIgnore()
 		{
 			Buffer buf = new Buffer();
@@ -2388,7 +2471,7 @@ loop_break: ;
 		private static readonly byte[] keepalivemsg = Util.Str2byte("keepalive@jcraft.com"
 			);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void SendKeepAliveMsg()
 		{
 			Buffer buf = new Buffer();
@@ -2432,7 +2515,7 @@ loop_break: ;
 			return hostKeyAlias;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetServerAliveInterval(int interval)
 		{
 			SetTimeout(interval);

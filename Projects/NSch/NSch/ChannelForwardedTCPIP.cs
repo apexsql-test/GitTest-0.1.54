@@ -48,20 +48,11 @@ namespace NSch
 
 		private const int TIMEOUT = 10 * 1000;
 
-		internal SocketFactory factory = null;
-
 		private Socket socket = null;
 
 		private ForwardedTCPIPDaemon daemon = null;
 
-		internal string target;
-
-		internal int lport;
-
-		internal int rport;
-
 		private ChannelForwardedTCPIP.Config config = null;
-
 
 		internal ChannelForwardedTCPIP()
 			: base()
@@ -78,21 +69,21 @@ namespace NSch
 		{
 			try
 			{
-				if (lport == -1)
+				if (config is ChannelForwardedTCPIP.ConfigDaemon)
 				{
-					Type c = Sharpen.Runtime.GetType(target);
+					ChannelForwardedTCPIP.ConfigDaemon _config = (ChannelForwardedTCPIP.ConfigDaemon)config;
+					Type c = Sharpen.Runtime.GetType(_config.target);
 					daemon = (ForwardedTCPIPDaemon)System.Activator.CreateInstance(c);
 					PipedOutputStream @out = new PipedOutputStream();
 					io.SetInputStream(new Channel.PassiveInputStream(this, @out, 32 * 1024), false);
 					daemon.SetChannel(this, GetInputStream(), @out);
-					object[] foo = GetPort(GetSession(), rport);
-					daemon.SetArg((object[])foo[3]);
+					daemon.SetArg(_config.arg);
 					new Sharpen.Thread(daemon).Start();
 				}
 				else
 				{
-					socket = (factory == null) ? Util.CreateSocket(target, lport, TIMEOUT) : factory.
-						CreateSocket(target, lport);
+					ChannelForwardedTCPIP.ConfigLHost _config = (ChannelForwardedTCPIP.ConfigLHost)config;
+					socket = (_config.factory == null) ? Util.CreateSocket(_config.target, _config.lport, TIMEOUT) : _config.factory.CreateSocket(_config.target, _config.lport);
 					socket.NoDelay = true;
 					io.SetInputStream(socket.GetInputStream());
 					io.SetOutputStream(socket.GetOutputStream());
@@ -163,53 +154,39 @@ namespace NSch
 			{
 			}
 			// session has been already down.
-			lock (pool)
+			this.config = GetPort(_session, Util.Byte2str(addr), port);
+			if (this.config == null)
 			{
-				for (int i = 0; i < pool.Count; i++)
-				{
-					object[] foo = (object[])(pool[i]);
-					if (foo[0] != _session)
-					{
-						continue;
-					}
-					if (((int)foo[1]) != port)
-					{
-						continue;
-					}
-					this.rport = port;
-					this.target = (string)foo[2];
-					if (foo[3] == null || (foo[3] is object[]))
-					{
-						this.lport = -1;
-					}
-					else
-					{
-						this.lport = ((int)foo[3]);
-					}
-					if (foo.Length >= 6)
-					{
-						this.factory = ((SocketFactory)foo[5]);
-					}
-					break;
-				}
-				if (target == null)
-				{
-				}
+				this.config = GetPort(_session, null, port);
+			}
+			if (this.config == null)
+			{
+				//if (JSch.GetLogger().IsEnabled(LoggerConstants.Error))
+				//{
+				//	JSch.GetLogger().Log(LoggerConstants.Error, "ChannelForwardedTCPIP: " + Util.Byte2str(addr) + ":" + port + " is not registered.");
+				//}
 			}
 		}
 
-		internal static object[] GetPort(Session session, int rport)
+		private static ChannelForwardedTCPIP.Config GetPort(Session session, string address_to_bind, int rport)
 		{
 			lock (pool)
 			{
 				for (int i = 0; i < pool.Count; i++)
 				{
-					object[] bar = (object[])(pool[i]);
-					if (bar[0] != session)
+					ChannelForwardedTCPIP.Config bar = (ChannelForwardedTCPIP.Config)(pool[i]);
+					if (bar.session != session)
 					{
 						continue;
 					}
-					if (((int)bar[1]) != rport)
+					if (bar.rport != rport)
+					{
+						if (bar.rport != 0 || bar.allocated_rport != rport)
+						{
+							continue;
+						}
+					}
+					if (address_to_bind != null && !bar.address_to_bind.Equals(address_to_bind))
 					{
 						continue;
 					}
@@ -226,27 +203,23 @@ namespace NSch
 			{
 				for (int i = 0; i < pool.Count; i++)
 				{
-					object[] bar = (object[])(pool[i]);
-					if (bar[0] != session)
+					ChannelForwardedTCPIP.Config config = (ChannelForwardedTCPIP.Config)(pool[i]);
+					if (config is ChannelForwardedTCPIP.ConfigDaemon)
 					{
-						continue;
-					}
-					if (bar[3] == null)
-					{
-						foo.Add(bar[1] + ":" + bar[2] + ":");
+						foo.Add(config.allocated_rport + ":" + config.target + ":");
 					}
 					else
 					{
-						foo.Add(bar[1] + ":" + bar[2] + ":" + bar[3]);
+						foo.Add(config.allocated_rport + ":" + config.target + ":" + ((ChannelForwardedTCPIP.ConfigLHost)config).lport);
 					}
 				}
 			}
-			string[] bar_1 = new string[foo.Count];
+			string[] bar = new string[foo.Count];
 			for (int i_1 = 0; i_1 < foo.Count; i_1++)
 			{
-				bar_1[i_1] = (string)(foo[i_1]);
+				bar[i_1] = (string)(foo[i_1]);
 			}
-			return bar_1;
+			return bar;
 		}
 
 		internal static string Normalize(string address)
@@ -269,43 +242,45 @@ namespace NSch
 		}
 
 		/// <exception cref="NSch.JSchException"/>
-		internal static void AddPort(Session session, string _address_to_bind, int port, string target, int lport, SocketFactory factory)
+		internal static void AddPort(Session session, string _address_to_bind, int port, int allocated_port, string target, int lport, SocketFactory factory)
 		{
 			string address_to_bind = Normalize(_address_to_bind);
 			lock (pool)
 			{
-				if (GetPort(session, port) != null)
+				if (GetPort(session, address_to_bind, port) != null)
 				{
 					throw new JSchException("PortForwardingR: remote port " + port + " is already registered.");
 				}
-				object[] foo = new object[6];
-				foo[0] = session;
-				foo[1] = port;
-				foo[2] = target;
-				foo[3] = lport;
-				foo[4] = address_to_bind;
-				foo[5] = factory;
-				pool.Add(foo);
+				ChannelForwardedTCPIP.ConfigLHost config = new ChannelForwardedTCPIP.ConfigLHost();
+				config.session = session;
+				config.rport = port;
+				config.allocated_rport = allocated_port;
+				config.target = target;
+				config.lport = lport;
+				config.address_to_bind = address_to_bind;
+				config.factory = factory;
+				pool.Add(config);
 			}
 		}
 
 		/// <exception cref="NSch.JSchException"/>
-		internal static void AddPort(Session session, string _address_to_bind, int port, string daemon, object[] arg)
+		internal static void AddPort(Session session, string _address_to_bind, int port, int allocated_port, string daemon, object[] arg)
 		{
 			string address_to_bind = Normalize(_address_to_bind);
 			lock (pool)
 			{
-				if (GetPort(session, port) != null)
+				if (GetPort(session, address_to_bind, port) != null)
 				{
 					throw new JSchException("PortForwardingR: remote port " + port + " is already registered.");
 				}
-				object[] foo = new object[5];
-				foo[0] = session;
-				foo[1] = port;
-				foo[2] = daemon;
-				foo[3] = arg;
-				foo[4] = address_to_bind;
-				pool.Add(foo);
+				ChannelForwardedTCPIP.ConfigDaemon config = new ChannelForwardedTCPIP.ConfigDaemon();
+				config.session = session;
+				config.rport = port;
+				config.allocated_rport = port;
+				config.target = daemon;
+				config.arg = arg;
+				config.address_to_bind = address_to_bind;
+				pool.Add(config);
 			}
 		}
 
@@ -320,9 +295,9 @@ namespace NSch
 			{
 			}
 			// session has been already down.
-			if (_session != null)
+			if (_session != null && c.config != null)
 			{
-				DelPort(_session, c.rport);
+				DelPort(_session, c.config.rport);
 			}
 		}
 
@@ -335,20 +310,10 @@ namespace NSch
 		{
 			lock (pool)
 			{
-				object[] foo = null;
-				for (int i = 0; i < pool.Count; i++)
+				ChannelForwardedTCPIP.Config foo = GetPort(session, Normalize(address_to_bind), rport);
+				if (foo == null)
 				{
-					object[] bar = (object[])(pool[i]);
-					if (bar[0] != session)
-					{
-						continue;
-					}
-					if (((int)bar[1]) != rport)
-					{
-						continue;
-					}
-					foo = bar;
-					break;
+					foo = GetPort(session, null, rport);
 				}
 				if (foo == null)
 				{
@@ -357,7 +322,7 @@ namespace NSch
 				pool.RemoveElement(foo);
 				if (address_to_bind == null)
 				{
-					address_to_bind = (string)foo[4];
+					address_to_bind = foo.address_to_bind;
 				}
 				if (address_to_bind == null)
 				{
@@ -397,10 +362,10 @@ namespace NSch
 				rport = new int[pool.Count];
 				for (int i = 0; i < pool.Count; i++)
 				{
-					object[] bar = (object[])(pool[i]);
-					if (bar[0] == session)
+					ChannelForwardedTCPIP.Config config = (ChannelForwardedTCPIP.Config)(pool[i]);
+					if (config.session == session)
 					{
-						rport[count++] = ((int)bar[1]);
+						rport[count++] = config.rport;
 					}
 				}
 			}
@@ -412,12 +377,15 @@ namespace NSch
 
 		public virtual int GetRemotePort()
 		{
-			return rport;
+			return (config != null ? config.rport : 0);
 		}
 
-		internal virtual void SetSocketFactory(SocketFactory factory)
+		private void SetSocketFactory(SocketFactory factory)
 		{
-			this.factory = factory;
+			if (config != null && (config is ChannelForwardedTCPIP.ConfigLHost))
+			{
+				((ChannelForwardedTCPIP.ConfigLHost)config).factory = factory;
+			}
 		}
 
 		internal abstract class Config
