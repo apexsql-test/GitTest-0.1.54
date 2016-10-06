@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@ All credit should go to the authors of jsch.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using NSch;
 using Sharpen;
 
@@ -39,7 +40,8 @@ namespace NSch
 {
 	public class JSch
 	{
-		public static readonly string VERSION = "0.1.46";
+		/// <summary>The version number.</summary>
+		public const string VERSION = "0.1.54";
 
 		internal static Hashtable config = new Hashtable();
 
@@ -133,9 +135,9 @@ namespace NSch
 
 		private HostKeyRepository known_hosts = null;
 
-		private sealed class _Logger_134 : Logger
+		private sealed class _Logger_183 : Logger
 		{
-			public _Logger_134()
+			public _Logger_183()
 			{
 			}
 
@@ -149,7 +151,7 @@ namespace NSch
 			}
 		}
 
-		private static readonly Logger DEVNULL = new _Logger_134();
+		private static readonly Logger DEVNULL = new _Logger_183();
 
 		internal static Logger logger = DEVNULL;
 
