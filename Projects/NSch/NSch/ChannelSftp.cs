@@ -188,7 +188,7 @@ namespace NSch
 
 		private string lcwd;
 
-		private static readonly string UTF8 = "UTF-8";
+		private const string UTF8 = "UTF-8";
 
 		private string fEncoding = UTF8;
 
@@ -662,6 +662,10 @@ namespace NSch
 			{
 				if (e is SftpException)
 				{
+					if (((SftpException)e).id == SSH_FX_FAILURE && IsRemoteDir(dst))
+					{
+						throw new SftpException(SSH_FX_FAILURE, dst + " is a directory");
+					}
 					throw (SftpException)e;
 				}
 				if (e is Exception)
@@ -780,10 +784,6 @@ namespace NSch
 						{
 							while (((seq - startid) - ackcount) >= bulk_requests)
 							{
-								if (this.rwsize >= foo)
-								{
-									break;
-								}
 								if (CheckStatus(ackid, header))
 								{
 									int _ackid = ackid[0];
@@ -898,6 +898,10 @@ namespace NSch
 					}
 				}
 				//System.err.println(eee);
+				if (monitor != null)
+				{
+                    monitor.Init(SftpProgressMonitor.PUT, "-", dst, SftpProgressMonitor.UNKNOWN_SIZE);
+				}
 				if (mode == OVERWRITE)
 				{
 					SendOPENW(dstb);
@@ -1603,8 +1607,10 @@ loop_break: ;
 				}
 				byte[] handle = buf.GetString();
 				// handle
-				InputStream @in = new _InputStream_1195(this, skip, monitor, handle);
-				//throwStatusError(buf, i);
+				InputStream @in = new _InputStream_1344(this, skip, monitor, handle);
+				// working around slow transfer speed for
+				// some sftp servers including Titan FTP.
+				//ThrowStatusError(buf, i);
 				//
 				// ??
 				return @in;
@@ -1623,9 +1629,9 @@ loop_break: ;
 			}
 		}
 
-		private sealed class _InputStream_1195 : InputStream
+		private sealed class _InputStream_1344 : InputStream
 		{
-			public _InputStream_1195(ChannelSftp _enclosing, long skip, SftpProgressMonitor monitor, byte[] handle)
+			public _InputStream_1344(ChannelSftp _enclosing, long skip, SftpProgressMonitor monitor, byte[] handle)
 			{
 				this._enclosing = _enclosing;
 				this.skip = skip;
@@ -1637,6 +1643,8 @@ loop_break: ;
 				this._data = new byte[1];
 				this.rest_byte = new byte[1024];
 				this.header = new ChannelHeader(_enclosing);
+				this.request_max = 1;
+				this.request_offset = this.offset;
 			}
 
 			internal long offset;
@@ -3523,6 +3531,33 @@ loop_break: ;
 			}
 
 			private readonly ChannelSftp _enclosing;
+		}
+
+		/// <summary>This interface will be passed as an argument for <code>ls</code> method.</summary>
+		/// <seealso cref="LsEntry"/>
+		/// <seealso cref="ChannelSftp.Ls(string, LsEntrySelector)"/>
+		/// <since>0.1.47</since>
+		public interface LsEntrySelector
+		{
+			/// <summary>
+			/// <p> The <code>select</code> method will be invoked in <code>ls</code>
+			/// method for each file entry.
+			/// </summary>
+			/// <remarks>
+			/// <p> The <code>select</code> method will be invoked in <code>ls</code>
+			/// method for each file entry. If this method returns BREAK,
+			/// <code>ls</code> will be canceled.
+			/// </remarks>
+			/// <param name="entry">one of entry from ls</param>
+			/// <returns>if BREAK is returned, the 'ls' operation will be canceled.</returns>
+			int Select(ChannelSftp.LsEntry entry);
+		}
+
+		public static class LsEntrySelectorConstants
+		{
+			public const int Continue = 0;
+
+			public const int Break = 1;
 		}
 	}
 
