@@ -346,6 +346,18 @@ namespace NSch
 						extensions.Put(Util.Byte2str(extension_name), Util.Byte2str(extension_data));
 					}
 				}
+				if (extensions["posix-rename@openssh.com"] != null && extensions["posix-rename@openssh.com"].Equals("1"))
+				{
+					extension_posix_rename = true;
+				}
+				if (extensions["statvfs@openssh.com"] != null && extensions["statvfs@openssh.com"].Equals("2"))
+				{
+					extension_statvfs = true;
+				}
+				if (extensions["hardlink@openssh.com"] != null && extensions["hardlink@openssh.com"].Equals("1"))
+				{
+					extension_hardlink = true;
+				}
 				lcwd = new FilePath(".").GetCanonicalPath();
 			}
 			catch (Exception e)
@@ -648,10 +660,6 @@ namespace NSch
 				{
 					dst = (string)(v[0]);
 				}
-				if (IsRemoteDir(dst))
-				{
-					throw new SftpException(SSH_FX_FAILURE, dst + " is a directory");
-				}
 				if (monitor != null)
 				{
 					monitor.Init(SftpProgressMonitor.PUT, "-", dst, SftpProgressMonitor.UNKNOWN_SIZE);
@@ -806,7 +814,19 @@ namespace NSch
 								}
 							}
 						}
+						if (dontcopy)
+						{
 						foo -= SendWRITE(handle, offset, data, 0, foo);
+							if (data != obuf.buffer)
+							{
+								data = obuf.buffer;
+								_datalen = obuf.buffer.Length - _s - Session.buffer_margin;
+							}
+						}
+						else
+						{
+							foo -= SendWRITE(handle, offset, data, _s, foo);
+						}
 					}
 					offset += count;
 					if (monitor != null && !monitor.Count(count))
@@ -1189,6 +1209,16 @@ namespace NSch
 							dstsb.Append(Sharpen.Runtime.Substring(_src, i + 1));
 						}
 						_dst = dstsb.ToString();
+						if (_dst.IndexOf("..") != -1)
+						{
+							string dstc = (new FilePath(dst)).GetCanonicalPath();
+							string _dstc = (new FilePath(_dst)).GetCanonicalPath();
+							if (!(_dstc.Length > dstc.Length && Sharpen.Runtime.Substring(_dstc, 0, dstc.Length
+								 + 1).Equals(dstc + file_separator)))
+							{
+								throw new SftpException(SSH_FX_FAILURE, "writing to an unexpected file " + _src);
+							}
+						}
 						dstsb.Delete(dst.Length, _dst.Length);
 					}
 					else
@@ -1450,6 +1480,20 @@ loop_break: ;
 
 		private class RequestQueue
 		{
+			[System.Serializable]
+			internal class OutOfOrderException : Exception
+			{
+				internal long offset;
+
+				internal OutOfOrderException(RequestQueue _enclosing, long offset)
+				{
+					this._enclosing = _enclosing;
+					this.offset = offset;
+				}
+
+				private readonly RequestQueue _enclosing;
+			}
+
 			internal class Request
 			{
 				internal int id;
@@ -1607,6 +1651,7 @@ loop_break: ;
 				}
 				byte[] handle = buf.GetString();
 				// handle
+				rq.Init();
 				InputStream @in = new _InputStream_1344(this, skip, monitor, handle);
 				// working around slow transfer speed for
 				// some sftp servers including Titan FTP.
