@@ -66,7 +66,7 @@ namespace NSch
 			io = new IO();
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public override void Connect(int connectTimeout)
 		{
 			this.connectTimeout = connectTimeout;

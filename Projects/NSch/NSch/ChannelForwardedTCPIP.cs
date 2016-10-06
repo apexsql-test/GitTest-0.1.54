@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@ All credit should go to the authors of jsch.
 
 using System;
 using System.Collections;
+using System.IO;
 using System.Net.Sockets;
 using NSch;
 using Sharpen;
@@ -39,7 +40,7 @@ namespace NSch
 {
 	public class ChannelForwardedTCPIP : Channel
 	{
-		internal static ArrayList pool = new ArrayList();
+		private static ArrayList pool = new ArrayList();
 
 		private const int LOCAL_WINDOW_SIZE_MAX = unchecked((int)(0x20000));
 
@@ -59,7 +60,8 @@ namespace NSch
 
 		internal int rport;
 
-		public ChannelForwardedTCPIP() : base()
+		internal ChannelForwardedTCPIP()
+			: base()
 		{
 			//static private final int LOCAL_WINDOW_SIZE_MAX=0x100000;
 			SetLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
@@ -264,7 +266,7 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal static void AddPort(Session session, string _address_to_bind, int port, 
 			string target, int lport, SocketFactory factory)
 		{
@@ -287,7 +289,7 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal static void AddPort(Session session, string _address_to_bind, int port, 
 			string daemon, object[] arg)
 		{

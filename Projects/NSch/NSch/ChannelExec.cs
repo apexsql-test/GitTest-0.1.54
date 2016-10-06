@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@ All credit should go to the authors of jsch.
 */
 
 using System;
+using System.IO;
 using NSch;
 using Sharpen;
 
@@ -39,7 +40,7 @@ namespace NSch
 	{
 		internal byte[] command = new byte[0];
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public override void Start()
 		{
 			Session _session = GetSession();
@@ -83,7 +84,7 @@ namespace NSch
 			this.command = command;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal override void Init()
 		{
 			io.SetInputStream(GetSession().@in);
@@ -100,7 +101,7 @@ namespace NSch
 			SetExtOutputStream(@out, dontclose);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		public virtual InputStream GetErrStream()
 		{
 			return GetExtInputStream();

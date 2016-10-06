@@ -114,7 +114,7 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal override void Write(byte[] foo, int s, int l)
 		{
 			if (packet == null)
