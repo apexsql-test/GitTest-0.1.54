@@ -37,13 +37,15 @@ namespace NSch
 {
 	internal class IdentityFile : Identity
 	{
-		internal string identity;
-
 		internal byte[] key;
 
 		internal byte[] iv;
 
 		private JSch jsch;
+
+		private NSch.KeyPair kpair;
+
+		internal string identity;
 
 		private HASH hash;
 
@@ -91,103 +93,15 @@ namespace NSch
 
 		private bool encrypted = true;
 
-		// DSA
-		// RSA
-		// modulus
-		// public exponent
-		// private exponent
-		//  private String algname="ssh-dss";
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal static NSch.IdentityFile NewInstance(string prvfile, string pubfile, JSch
 			 jsch)
 		{
-			byte[] prvkey = null;
-			byte[] pubkey = null;
-			FilePath file = null;
-			FileInputStream fis = null;
-			try
-			{
-				file = new FilePath(prvfile);
-				fis = new FileInputStream(prvfile);
-				prvkey = new byte[(int)(file.Length())];
-				int len = 0;
-				while (true)
-				{
-					int i = fis.Read(prvkey, len, prvkey.Length - len);
-					if (i <= 0)
-					{
-						break;
-					}
-					len += i;
-				}
-				fis.Close();
-			}
-			catch (Exception e)
-			{
-				try
-				{
-					if (fis != null)
-					{
-						fis.Close();
-					}
-				}
-				catch (Exception)
-				{
-				}
-				if (e is Exception)
-				{
-					throw new JSchException(e.ToString(), (Exception)e);
-				}
-				throw new JSchException(e.ToString());
-			}
-			string _pubfile = pubfile;
-			if (pubfile == null)
-			{
-				_pubfile = prvfile + ".pub";
-			}
-			try
-			{
-				file = new FilePath(_pubfile);
-				fis = new FileInputStream(_pubfile);
-				pubkey = new byte[(int)(file.Length())];
-				int len = 0;
-				while (true)
-				{
-					int i = fis.Read(pubkey, len, pubkey.Length - len);
-					if (i <= 0)
-					{
-						break;
-					}
-					len += i;
-				}
-				fis.Close();
-			}
-			catch (Exception e)
-			{
-				try
-				{
-					if (fis != null)
-					{
-						fis.Close();
-					}
-				}
-				catch (Exception)
-				{
-				}
-				if (pubfile != null)
-				{
-					// The pubfile is explicitry given, but not accessible.
-					if (e is Exception)
-					{
-						throw new JSchException(e.ToString(), (Exception)e);
-					}
-					throw new JSchException(e.ToString());
-				}
-			}
-			return NewInstance(prvfile, prvkey, pubkey, jsch);
+			NSch.KeyPair kpair = NSch.KeyPair.Load(jsch, prvfile, pubfile);
+			return new NSch.IdentityFile(jsch, prvfile, kpair);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal static NSch.IdentityFile NewInstance(string name, byte[] prvkey, byte[] 
 			pubkey, JSch jsch)
 		{
@@ -201,7 +115,15 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
+		private IdentityFile(JSch jsch, string name, NSch.KeyPair kpair)
+		{
+			this.jsch = jsch;
+			this.identity = name;
+			this.kpair = kpair;
+		}
+
+		/// <exception cref="NSch.JSchException"/>
 		private IdentityFile(string name, byte[] prvkey, byte[] pubkey, JSch jsch)
 		{
 			this.identity = name;
@@ -620,7 +542,7 @@ namespace NSch
 			return "ssh-dss";
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual bool SetPassphrase(byte[] _passphrase)
 		{
 			try
