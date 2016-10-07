@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -35,14 +35,14 @@ using Sharpen;
 
 namespace NSch
 {
-	class ChannelShell : ChannelSession
+	public class ChannelShell : ChannelSession
 	{
-		public ChannelShell() : base()
+		internal ChannelShell(): base()
 		{
 			pty = true;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public override void Start()
 		{
 			Session _session = GetSession();
@@ -76,7 +76,7 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal override void Init()
 		{
 			io.SetInputStream(GetSession().@in);
