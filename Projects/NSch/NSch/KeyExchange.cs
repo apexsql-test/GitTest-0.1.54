@@ -125,6 +125,11 @@ namespace NSch
 			return "ECDSA";
 		}
 
+		public virtual string getKeyAlgorithName()
+		{
+			return key_alg_name;
+		}
+
 		protected internal static string[] Guess(byte[] I_S, byte[] I_C)
 		{
 			string[] guess = new string[PROPOSAL_MAX];
@@ -132,7 +137,20 @@ namespace NSch
 			sb.SetOffSet(17);
 			Buffer cb = new Buffer(I_C);
 			cb.SetOffSet(17);
-			for (int i = 0; i < PROPOSAL_MAX; i++)
+			if (JSch.GetLogger().IsEnabled(Logger.INFO))
+			{
+				for (int i = 0; i < PROPOSAL_MAX; i++)
+				{
+					JSch.GetLogger().Log(Logger.INFO, "kex: server: " + Util.Byte2str(sb.GetString()));
+				}
+				for (int i_1 = 0; i_1 < PROPOSAL_MAX; i_1++)
+				{
+                    JSch.GetLogger().Log(Logger.INFO, "kex: client: " + Util.Byte2str(cb.GetString()));
+				}
+				sb.SetOffSet(17);
+				cb.SetOffSet(17);
+			}
+			for (int i_2 = 0; i_2 < PROPOSAL_MAX; i_2++)
 			{
 				byte[] sp = sb.GetString();
 				// server proposal
@@ -165,7 +183,7 @@ namespace NSch
 						}
 						if (algorithm.Equals(Util.Byte2str(sp, m, l - m)))
 						{
-							guess[i] = algorithm;
+							guess[i_2] = algorithm;
 							goto loop_break;
 						}
 						l++;
@@ -178,11 +196,11 @@ loop_continue: ;
 loop_break: ;
 				if (j == 0)
 				{
-					guess[i] = string.Empty;
+					guess[i_2] = string.Empty;
 				}
 				else
 				{
-					if (guess[i] == null)
+					if (guess[i_2] == null)
 					{
 						return null;
 					}
