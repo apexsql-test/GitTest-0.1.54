@@ -1,5 +1,6 @@
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2015-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -24,33 +25,40 @@ OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-This code is based on jsch (http://www.jcraft.com/jsch).
-All credit should go to the authors of jsch.
 */
-
 using Sharpen;
 
 namespace NSch
 {
-	public interface SignatureDSA
+/*
+	public abstract class SignatureECDSA : Signature
 	{
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
+		public abstract void SetPubKey(byte[] r, byte[] s);
+
+		/// <exception cref="System.Exception"/>
+    public abstract void SetPrvKey(byte[] s);
+	}
+*/
+
+	public interface SignatureECDSA
+	{
+		/// <exception cref="System.Exception"/>
 		void Init();
 
-		/// <exception cref="System.Exception"></exception>
-		void SetPubKey(byte[] y, byte[] p, byte[] q, byte[] g);
+		/// <exception cref="System.Exception"/>
+		void SetPubKey(byte[] r, byte[] s);
 
-		/// <exception cref="System.Exception"></exception>
-		void SetPrvKey(byte[] x, byte[] p, byte[] q, byte[] g);
+		/// <exception cref="System.Exception"/>
+		void SetPrvKey(byte[] s);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		void Update(byte[] H);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		bool Verify(byte[] sig);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		byte[] Sign();
 	}
 }
