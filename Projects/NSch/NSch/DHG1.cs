@@ -110,12 +110,6 @@ namespace NSch
 
 		private const int SSH_MSG_KEXDH_REPLY = 31;
 
-		internal const int RSA = 0;
-
-		internal const int DSS = 1;
-
-		private int type = 0;
-
 		private int state;
 
 		internal NSch.DH dh;
@@ -135,8 +129,7 @@ namespace NSch
 		private Packet packet;
 
 		/// <exception cref="System.Exception"/>
-		public override void Init(Session session, byte[] V_S, byte[] V_C, byte[] I_S, byte
-			[] I_C)
+		public override void Init(Session session, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C)
 		{
 			this.session = session;
 			this.V_S = V_S;
@@ -151,7 +144,7 @@ namespace NSch
 			}
 			catch (Exception ex)
 			{
-				System.Console.Error.WriteLine(e);
+				System.Console.Error.WriteLine(ex.Message);
 			}
 			buf = new Buffer();
 			packet = new Packet(buf);
@@ -211,7 +204,8 @@ namespace NSch
 					byte[] f = _buf.GetMPInt();
 					byte[] sig_of_H = _buf.GetString();
 					dh.SetF(f);
-					K = dh.GetK();
+					dh.CheckRange();
+					K = normalize(dh.GetK());
 					//The hash H is computed as the HASH hash of the concatenation of the
 					//following:
 					// string    V_C, the client's version string (CR and NL excluded)
@@ -245,125 +239,12 @@ namespace NSch
 						++]) & unchecked((int)(0x000000ff)));
 					string alg = Util.Byte2str(K_S, i, j);
 					i += j;
-					bool result = false;
-					if (alg.Equals("ssh-rsa"))
-					{
-						byte[] tmp;
-						byte[] ee;
-						byte[] n;
-						type = RSA;
-						j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-							(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-							++]) & unchecked((int)(0x000000ff)));
-						tmp = new byte[j];
-						System.Array.Copy(K_S, i, tmp, 0, j);
-						i += j;
-						ee = tmp;
-						j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-							(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-							++]) & unchecked((int)(0x000000ff)));
-						tmp = new byte[j];
-						System.Array.Copy(K_S, i, tmp, 0, j);
-						i += j;
-						n = tmp;
-						//	SignatureRSA sig=new SignatureRSA();
-						//	sig.init();
-						NSch.SignatureRSA sig = null;
-						try
-						{
-							Type c = Sharpen.Runtime.GetType(session.GetConfig("signature.rsa"));
-							sig = (NSch.SignatureRSA)(System.Activator.CreateInstance(c));
-							sig.Init();
-						}
-						catch (Exception ex)
-						{
-							System.Console.Error.WriteLine(ex);
-						}
-						sig.SetPubKey(ee, n);
-						sig.Update(H);
-						result = sig.Verify(sig_of_H);
-						if (JSch.GetLogger().IsEnabled(Logger.INFO))
-						{
-							JSch.GetLogger().Log(Logger.INFO, "ssh_rsa_verify: signature " + result);
-						}
-					}
-					else
-					{
-						if (alg.Equals("ssh-dss"))
-						{
-							byte[] q = null;
-							byte[] tmp;
-							byte[] p;
-							byte[] g;
-							type = DSS;
-							j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-								(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-								++]) & unchecked((int)(0x000000ff)));
-							tmp = new byte[j];
-							System.Array.Copy(K_S, i, tmp, 0, j);
-							i += j;
-							p = tmp;
-							j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-								(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-								++]) & unchecked((int)(0x000000ff)));
-							tmp = new byte[j];
-							System.Array.Copy(K_S, i, tmp, 0, j);
-							i += j;
-							q = tmp;
-							j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-								(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-								++]) & unchecked((int)(0x000000ff)));
-							tmp = new byte[j];
-							System.Array.Copy(K_S, i, tmp, 0, j);
-							i += j;
-							g = tmp;
-							j = ((K_S[i++] << 24) & unchecked((int)(0xff000000))) | ((K_S[i++] << 16) & unchecked(
-								(int)(0x00ff0000))) | ((K_S[i++] << 8) & unchecked((int)(0x0000ff00))) | ((K_S[i
-								++]) & unchecked((int)(0x000000ff)));
-							tmp = new byte[j];
-							System.Array.Copy(K_S, i, tmp, 0, j);
-							i += j;
-							f = tmp;
-							//	SignatureDSA sig=new SignatureDSA();
-							//	sig.init();
-							NSch.SignatureDSA sig = null;
-							try
-							{
-								Type c = Sharpen.Runtime.GetType(session.GetConfig("signature.dss"));
-								sig = (NSch.SignatureDSA)(System.Activator.CreateInstance(c));
-								sig.Init();
-							}
-							catch (Exception ex)
-							{
-								System.Console.Error.WriteLine(ex);
-							}
-							sig.SetPubKey(f, p, q, g);
-							sig.Update(H);
-							result = sig.Verify(sig_of_H);
-							if (JSch.GetLogger().IsEnabled(Logger.INFO))
-							{
-								JSch.GetLogger().Log(Logger.INFO, "ssh_dss_verify: signature " + result);
-							}
-						}
-						else
-						{
-							System.Console.Error.WriteLine("unknown alg");
-						}
-					}
+					bool result = verify(alg, K_S, i, sig_of_H);
 					state = STATE_END;
 					return result;
 				}
 			}
 			return false;
-		}
-
-		public override string GetKeyType()
-		{
-			if (type == DSS)
-			{
-				return "DSA";
-			}
-			return "RSA";
 		}
 
 		public override int GetState()
