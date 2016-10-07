@@ -2325,6 +2325,67 @@ loop_break: ;
 		}
 
 		/// <exception cref="NSch.SftpException"/>
+		public virtual void hardlink(string oldpath, string newpath)
+		{
+			if (!extension_hardlink)
+			{
+				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "hardlink@openssh.com is not supported"
+					);
+			}
+			try
+			{
+				((Channel.MyPipedInputStream)io_in).UpdateReadSide();
+				string _oldpath = RemoteAbsolutePath(oldpath);
+				newpath = RemoteAbsolutePath(newpath);
+				_oldpath = IsUnique(_oldpath);
+				if (oldpath[0] != '/')
+				{
+					// relative path
+					string cwd = GetCwd();
+					oldpath = Sharpen.Runtime.Substring(_oldpath, cwd.Length + (cwd.EndsWith("/") ? 0
+						 : 1));
+				}
+				else
+				{
+					oldpath = _oldpath;
+				}
+				if (IsPattern(newpath))
+				{
+					throw new SftpException(SSH_FX_FAILURE, newpath);
+				}
+				newpath = Util.Unquote(newpath);
+				SendHARDLINK(Util.Str2byte(oldpath, fEncoding), Util.Str2byte(newpath, fEncoding));
+				ChannelHeader header = new ChannelHeader(this);
+				header = Header(buf, header);
+				int length = header.length;
+				int type = header.type;
+				Fill(buf, length);
+				if (type != SSH_FXP_STATUS)
+				{
+					throw new SftpException(SSH_FX_FAILURE, string.Empty);
+				}
+				int i = buf.GetInt();
+				if (i == SSH_FX_OK)
+				{
+					return;
+				}
+				ThrowStatusError(buf, i);
+			}
+			catch (Exception e)
+			{
+				if (e is SftpException)
+				{
+					throw (SftpException)e;
+				}
+				if (e is Exception)
+				{
+					throw new SftpException(SSH_FX_FAILURE, string.Empty, (Exception)e);
+				}
+				throw new SftpException(SSH_FX_FAILURE, string.Empty);
+			}
+		}
+
+		/// <exception cref="NSch.SftpException"/>
 		public virtual void Rename(string oldpath, string newpath)
 		{
 			if (server_version < 2)
@@ -3024,6 +3085,12 @@ loop_break: ;
 		}
 
 		/// <exception cref="System.Exception"/>
+		private void sendSTATVFS(byte[] path)
+		{
+			SendPacketPath(unchecked((byte)0), path, "statvfs@openssh.com");
+		}
+
+		/// <exception cref="System.Exception"/>
 		private void SendLSTAT(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_LSTAT, path);
@@ -3085,6 +3152,12 @@ loop_break: ;
 		}
 
 		/// <exception cref="System.Exception"/>
+		private void SendHARDLINK(byte[] p1, byte[] p2)
+		{
+			SendPacketPath(unchecked((byte)0), p1, p2, "hardlink@openssh.com");
+		}
+
+		/// <exception cref="System.Exception"/>
 		private void SendREADLINK(byte[] path)
 		{
 			SendPacketPath(SSH_FXP_READLINK, path);
@@ -3105,7 +3178,7 @@ loop_break: ;
 		/// <exception cref="System.Exception"/>
 		private void SendRENAME(byte[] p1, byte[] p2)
 		{
-			SendPacketPath(SSH_FXP_RENAME, p1, p2);
+			SendPacketPath(SSH_FXP_RENAME, p1, p2, extension_posix_rename ? "posix-rename@openssh.com": null);
 		}
 
 		/// <exception cref="System.Exception"/>
