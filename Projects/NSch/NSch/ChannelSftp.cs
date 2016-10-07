@@ -1906,6 +1906,41 @@ loop_break: ;
 		/// <exception cref="NSch.SftpException"/>
 		public virtual ArrayList Ls(string path)
 		{
+			ArrayList v = new ArrayList();
+			ChannelSftp.LsEntrySelector selector = new _LsEntrySelector_1547(v);
+			ls(path, selector);
+			return v;
+		}
+
+		private sealed class _LsEntrySelector_1547 : ChannelSftp.LsEntrySelector
+		{
+			public _LsEntrySelector_1547(ArrayList v)
+			{
+				this.v = v;
+			}
+
+            public override int Select(ChannelSftp.LsEntry entry)
+			{
+				v.Add(entry);
+				return LsEntrySelector.CONTINUE;
+			}
+
+			private readonly ArrayList v;
+		}
+
+		/// <summary>List files specified by the remote <code>path</code>.</summary>
+		/// <remarks>
+		/// List files specified by the remote <code>path</code>.
+		/// Each files and directories will be passed to
+		/// <code>LsEntrySelector#select(LsEntry)</code> method, and if that method
+		/// returns <code>LsEntrySelector#BREAK</code>, the operation will be
+		/// canceled immediately.
+		/// </remarks>
+		/// <seealso cref="LsEntrySelector"/>
+		/// <since>0.1.47</since>
+		/// <exception cref="NSch.SftpException"/>
+		public virtual void ls(string path, ChannelSftp.LsEntrySelector selector)
+		{
 			//System.out.println("ls: "+path);
 			try
 			{
@@ -1964,9 +1999,10 @@ loop_break: ;
 					int i = buf.GetInt();
 					ThrowStatusError(buf, i);
 				}
+                int cancel = LsEntrySelector.CONTINUE;
 				byte[] handle = buf.GetString();
 				// handle
-				while (true)
+                while (cancel == LsEntrySelector.CONTINUE)
 				{
 					SendREADDIR(handle);
 					header = Header(buf, header);
@@ -2010,6 +2046,11 @@ loop_break: ;
 							longname = buf.GetString();
 						}
 						SftpATTRS attrs = SftpATTRS.GetATTR(buf);
+                        if (cancel == LsEntrySelector.BREAK)
+						{
+							count--;
+							continue;
+						}
 						bool find = false;
 						string f = null;
 						if (pattern == null)
@@ -2056,7 +2097,6 @@ loop_break: ;
 					}
 				}
 				_sendCLOSE(handle, header);
-				return v;
 			}
 			catch (Exception e)
 			{
@@ -2138,9 +2178,19 @@ loop_break: ;
 			try
 			{
 				((Channel.MyPipedInputStream)io_in).UpdateReadSide();
-				oldpath = RemoteAbsolutePath(oldpath);
+				string _oldpath = RemoteAbsolutePath(oldpath);
 				newpath = RemoteAbsolutePath(newpath);
-				oldpath = IsUnique(oldpath);
+				_oldpath = IsUnique(_oldpath);
+				if (oldpath[0] != '/')
+				{
+					// relative path
+					string cwd = GetCwd();
+					oldpath = Sharpen.Runtime.Substring(_oldpath, cwd.Length + (cwd.EndsWith("/") ? 0: 1));
+				}
+				else
+				{
+					oldpath = _oldpath;
+				}
 				if (IsPattern(newpath))
 				{
 					throw new SftpException(SSH_FX_FAILURE, newpath);
@@ -3582,8 +3632,11 @@ loop_break: ;
 		/// <seealso cref="LsEntry"/>
 		/// <seealso cref="ChannelSftp.Ls(string, LsEntrySelector)"/>
 		/// <since>0.1.47</since>
-		public interface LsEntrySelector
+		public abstract class LsEntrySelector
 		{
+			public const int CONTINUE = 0;
+
+			public const int BREAK = 1;
 			/// <summary>
 			/// <p> The <code>select</code> method will be invoked in <code>ls</code>
 			/// method for each file entry.
@@ -3595,14 +3648,7 @@ loop_break: ;
 			/// </remarks>
 			/// <param name="entry">one of entry from ls</param>
 			/// <returns>if BREAK is returned, the 'ls' operation will be canceled.</returns>
-			int Select(ChannelSftp.LsEntry entry);
-		}
-
-		public static class LsEntrySelectorConstants
-		{
-			public const int Continue = 0;
-
-			public const int Break = 1;
+			public abstract int Select(ChannelSftp.LsEntry entry);
 		}
 	}
 
