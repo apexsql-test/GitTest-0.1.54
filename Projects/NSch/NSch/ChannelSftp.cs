@@ -1938,6 +1938,23 @@ loop_break: ;
 					{
 						this._enclosing.io_in.Skip(optional_data);
 					}
+					if (length_of_data < rr.length)
+					{
+						this._enclosing.rq.Cancel(this.header, this._enclosing.buf);
+						try
+						{
+							this._enclosing.SendREAD(handle, rr.offset + length_of_data, (int)(rr.length - length_of_data), this._enclosing.rq);
+						}
+						catch (Exception)
+						{
+							throw new IOException("error");
+						}
+						this.request_offset = rr.offset + rr.length;
+					}
+					if (this.request_max < this._enclosing.rq.Size())
+					{
+						this.request_max++;
+					}
 					if (monitor != null)
 					{
 						if (!monitor.Count(i))
@@ -1963,6 +1980,7 @@ loop_break: ;
 				{
 					monitor.End();
 				}
+				this._enclosing.rq.Cancel(this.header, this._enclosing.buf);
 				try
 				{
 					this._enclosing._sendCLOSE(handle, this.header);
@@ -1998,7 +2016,7 @@ loop_break: ;
 				this.v = v;
 			}
 
-            public override int Select(ChannelSftp.LsEntry entry)
+      public override int Select(ChannelSftp.LsEntry entry)
 			{
 				v.Add(entry);
 				return LsEntrySelector.CONTINUE;
@@ -2078,10 +2096,10 @@ loop_break: ;
 					int i = buf.GetInt();
 					ThrowStatusError(buf, i);
 				}
-                int cancel = LsEntrySelector.CONTINUE;
+        int cancel = LsEntrySelector.CONTINUE;
 				byte[] handle = buf.GetString();
 				// handle
-                while (cancel == LsEntrySelector.CONTINUE)
+        while (cancel == LsEntrySelector.CONTINUE)
 				{
 					SendREADDIR(handle);
 					header = Header(buf, header);
@@ -3130,23 +3148,57 @@ loop_break: ;
 		/// <exception cref="System.Exception"/>
 		private void SendPacketPath(byte fxp, byte[] path)
 		{
+			SendPacketPath(fxp, path, (string)null);
+		}
+
+		/// <exception cref="System.Exception"/>
+		private void SendPacketPath(byte fxp, byte[] path, string extension)
+		{
 			packet.Reset();
-			PutHEAD(fxp, 9 + path.Length);
+			int len = 9 + path.Length;
+			if (extension == null)
+			{
+				PutHEAD(fxp, len);
+				buf.PutInt(seq++);
+			}
+			else
+			{
+				len += (4 + extension.Length);
+                PutHEAD(SSH_FXP_EXTENDED, len);
 			buf.PutInt(seq++);
+				buf.PutString(Util.Str2byte(extension));
+			}
 			buf.PutString(path);
 			// path
-			GetSession().Write(packet, this, 9 + path.Length + 4);
+			GetSession().Write(packet, this, len + 4);
 		}
 
 		/// <exception cref="System.Exception"/>
 		private void SendPacketPath(byte fxp, byte[] p1, byte[] p2)
 		{
+			SendPacketPath(fxp, p1, p2, null);
+		}
+
+		/// <exception cref="System.Exception"/>
+		private void SendPacketPath(byte fxp, byte[] p1, byte[] p2, string extension)
+		{
 			packet.Reset();
-			PutHEAD(fxp, 13 + p1.Length + p2.Length);
+			int len = 13 + p1.Length + p2.Length;
+			if (extension == null)
+			{
+				PutHEAD(fxp, len);
+				buf.PutInt(seq++);
+			}
+			else
+			{
+				len += (4 + extension.Length);
+				PutHEAD(SSH_FXP_EXTENDED, len);
 			buf.PutInt(seq++);
+				buf.PutString(Util.Str2byte(extension));
+			}
 			buf.PutString(p1);
 			buf.PutString(p2);
-			GetSession().Write(packet, this, 13 + p1.Length + p2.Length + 4);
+			GetSession().Write(packet, this, len + 4);
 		}
 
 		/// <exception cref="System.Exception"/>
