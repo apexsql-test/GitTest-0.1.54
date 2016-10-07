@@ -1387,7 +1387,18 @@ namespace NSch
 					header = Header(buf, header);
 					length = header.length;
 					type = header.type;
-					ChannelSftp.RequestQueue.Request rr = rq.Get(header.rid);
+					ChannelSftp.RequestQueue.Request rr = null;
+					try
+					{
+						rr = rq.Get(header.rid);
+					}
+					catch (ChannelSftp.RequestQueue.OutOfOrderException e)
+					{
+						request_offset = e.offset;
+						Skip(header.length);
+						rq.Cancel(header, buf);
+						continue;
+					}
 					if (type == SSH_FXP_STATUS)
 					{
 						Fill(buf, length);
@@ -1562,7 +1573,22 @@ loop_break: ;
 				}
 				if (this.rrq[i].id != id)
 				{
-					System.Console.Error.WriteLine("The request is not in order.");
+					long offset = this.getOffset();
+					bool find = false;
+					for (int j = 0; j < this.rrq.Length; j++)
+					{
+						if (this.rrq[j].id == id)
+						{
+							find = true;
+							this.rrq[j].id = 0;
+							break;
+						}
+					}
+					if (find)
+					{
+						throw new ChannelSftp.RequestQueue.OutOfOrderException(this, offset);
+					}
+					throw new SftpException(ChannelSftp.SSH_FX_FAILURE, "RequestQueue: unknown request id " + id);
 				}
 				this.rrq[i].id = 0;
 				return this.rrq[i];
@@ -1586,9 +1612,34 @@ loop_break: ;
 				{
 					header = this._enclosing.Header(buf, header);
 					int length = header.length;
-					this.Get(header.rid);
+					for (int j = 0; j < this.rrq.Length; j++)
+					{
+						if (this.rrq[j].id == header.rid)
+						{
+							this.rrq[j].id = 0;
+							break;
+						}
+					}
 					this._enclosing.Skip(length);
 				}
+				this.Init();
+			}
+
+			internal virtual long getOffset()
+			{
+				long result = long.MaxValue;
+				for (int i = 0; i < this.rrq.Length; i++)
+				{
+					if (this.rrq[i].id == 0)
+					{
+						continue;
+					}
+					if (result > this.rrq[i].offset)
+					{
+						result = this.rrq[i].offset;
+					}
+				}
+				return result;
 			}
 
 			private readonly ChannelSftp _enclosing;
@@ -1786,18 +1837,46 @@ loop_break: ;
 				{
 					len = 1024;
 				}
-				try
+				if (this._enclosing.rq.Count() == 0 || true)
 				{
-					this._enclosing.SendREAD(handle, this.offset, len);
-				}
-				catch (Exception)
-				{
-					throw new IOException("error");
+					int request_len = this._enclosing.buf.buffer.Length - 13;
+					if (this._enclosing.server_version == 0)
+					{
+						request_len = 1024;
+					}
+					while (this._enclosing.rq.Count() < this.request_max)
+					{
+    				try
+    				{
+							this._enclosing.SendREAD(handle, this.request_offset, request_len, this._enclosing.rq);
+    				}
+    				catch (Exception)
+    				{
+    					throw new IOException("error");
+    				}
+    				this.request_offset += request_len;
+  				}
 				}
 				this.header = this._enclosing.Header(this._enclosing.buf, this.header);
 				this.rest_length = this.header.length;
 				int type = this.header.type;
 				int id = this.header.rid;
+				ChannelSftp.RequestQueue.Request rr = null;
+				try
+				{
+					rr = this._enclosing.rq.Get(this.header.rid);
+				}
+				catch (ChannelSftp.RequestQueue.OutOfOrderException e)
+				{
+					this.request_offset = e.offset;
+					this.Skip(this.header.length);
+					this._enclosing.rq.Cancel(this.header, this._enclosing.buf);
+					return 0;
+				}
+				catch (SftpException e)
+				{
+					throw new IOException("error: " + e.ToString());
+				}
 				if (type != ChannelSftp.SSH_FXP_STATUS && type != ChannelSftp.SSH_FXP_DATA)
 				{
 					throw new IOException("error");
