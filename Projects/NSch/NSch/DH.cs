@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -35,19 +35,24 @@ namespace NSch
 {
 	public interface DH
 	{
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		void Init();
 
 		void SetP(byte[] p);
 
 		void SetG(byte[] g);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		byte[] GetE();
 
 		void SetF(byte[] f);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		byte[] GetK();
+
+		// checkRange() will check if e and f are in [1,p-1]
+		// as defined at https://tools.ietf.org/html/rfc4253#section-8
+		/// <exception cref="System.Exception"/>
+		void CheckRange();
 	}
 }

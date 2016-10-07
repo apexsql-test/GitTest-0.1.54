@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -57,16 +57,14 @@ namespace NSch.Jce
 		// my public key
 		// your public key
 		// shared secret key
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void Init()
 		{
 			myKpairGen = KeyPairGenerator.GetInstance("DH");
-			//    myKpairGen=KeyPairGenerator.getInstance("DiffieHellman");
 			myKeyAgree = KeyAgreement.GetInstance("DH");
 		}
 
-		//    myKeyAgree=KeyAgreement.getInstance("DiffieHellman");
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual byte[] GetE()
 		{
 			if (e == null)
@@ -75,15 +73,13 @@ namespace NSch.Jce
 				myKpairGen.Initialize(dhSkipParamSpec);
 				Sharpen.KeyPair myKpair = myKpairGen.GenerateKeyPair();
 				myKeyAgree.Init(myKpair.GetPrivate());
-				//    BigInteger x=((javax.crypto.interfaces.DHPrivateKey)(myKpair.getPrivate())).getX();
-				//byte[] myPubKeyEnc = myKpair.GetPublic().GetEncoded();
 				e = ((DHPublicKey)(myKpair.GetPublic())).GetY();
 				e_array = e.GetBytes();
 			}
 			return e_array;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual byte[] GetK()
 		{
 			if (K == null)
@@ -95,9 +91,6 @@ namespace NSch.Jce
 				byte[] mySharedSecret = myKeyAgree.GenerateSecret();
 				K = new BigInteger(mySharedSecret);
 				K_array = K.GetBytes();
-				//System.err.println("K.signum(): "+K.signum()+
-				//		   " "+Integer.toHexString(mySharedSecret[0]&0xff)+
-				//		   " "+Integer.toHexString(K_array[0]&0xff));
 				K_array = mySharedSecret;
 			}
 			return K_array;
@@ -132,5 +125,25 @@ namespace NSch.Jce
 		{
 			this.f = f;
 		}
+
+		// e, f must be in [1, p-1].
+		/// <exception cref="System.Exception"/>
+		public virtual void CheckRange()
+		{
+		}
+
+/*
+        /// <exception cref="System.Exception"/>
+		private void CheckRange(BigInteger tmp)
+		{
+			BigInteger one = BigInteger.ONE;
+			BigInteger p_1 = p.subtract(one);
+			// !(1<tmp && tmp<p-1)  We expect tmp is in the range [2, p-2].
+			if (!(one.compareTo(tmp) < 0 && tmp.compareTo(p_1) < 0))
+			{
+				throw new JSchException("invalid DH value");
+			}
+		}
+*/ 
 	}
 }
