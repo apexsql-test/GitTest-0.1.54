@@ -99,6 +99,7 @@
     <Compile Include="NSch\SftpATTRS.cs" />
     <Compile Include="NSch\SftpException.cs" />
     <Compile Include="NSch\SftpProgressMonitor.cs" />
+    <Compile Include="NSch\SftpStatVFS.cs" />
     <Compile Include="NSch\SignatureDSA.cs" />
     <Compile Include="NSch\SignatureRSA.cs" />
     <Compile Include="NSch\SocketFactory.cs" />

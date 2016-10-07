@@ -816,7 +816,7 @@ namespace NSch
 						}
 						if (dontcopy)
 						{
-						foo -= SendWRITE(handle, offset, data, 0, foo);
+							foo -= SendWRITE(handle, offset, data, 0, foo);
 							if (data != obuf.buffer)
 							{
 								data = obuf.buffer;
@@ -920,7 +920,7 @@ namespace NSch
 				//System.err.println(eee);
 				if (monitor != null)
 				{
-                    monitor.Init(SftpProgressMonitor.PUT, "-", dst, SftpProgressMonitor.UNKNOWN_SIZE);
+					monitor.Init(SftpProgressMonitor.PUT, "-", dst, SftpProgressMonitor.UNKNOWN_SIZE);
 				}
 				if (mode == OVERWRITE)
 				{
@@ -1846,16 +1846,16 @@ loop_break: ;
 					}
 					while (this._enclosing.rq.Count() < this.request_max)
 					{
-    				try
-    				{
+						try
+						{
 							this._enclosing.SendREAD(handle, this.request_offset, request_len, this._enclosing.rq);
-    				}
-    				catch (Exception)
-    				{
-    					throw new IOException("error");
-    				}
-    				this.request_offset += request_len;
-  				}
+						}
+						catch (Exception)
+						{
+							throw new IOException("error");
+						}
+						this.request_offset += request_len;
+					}
 				}
 				this.header = this._enclosing.Header(this._enclosing.buf, this.header);
 				this.rest_length = this.header.length;
@@ -2143,7 +2143,7 @@ loop_break: ;
 							longname = buf.GetString();
 						}
 						SftpATTRS attrs = SftpATTRS.GetATTR(buf);
-                        if (cancel == LsEntrySelector.BREAK)
+            if (cancel == LsEntrySelector.BREAK)
 						{
 							count--;
 							continue;
@@ -2793,6 +2793,83 @@ loop_break: ;
 		}
 
 		/// <exception cref="NSch.SftpException"/>
+		public virtual SftpStatVFS statVFS(string path)
+		{
+			try
+			{
+				((Channel.MyPipedInputStream)io_in).UpdateReadSide();
+				path = RemoteAbsolutePath(path);
+				path = IsUnique(path);
+				return _statVFS(path);
+			}
+			catch (Exception e)
+			{
+				if (e is SftpException)
+				{
+					throw (SftpException)e;
+				}
+				if (e is Exception)
+				{
+					throw new SftpException(SSH_FX_FAILURE, string.Empty, (Exception)e);
+				}
+				throw new SftpException(SSH_FX_FAILURE, string.Empty);
+			}
+		}
+
+		//return null;
+		/// <exception cref="NSch.SftpException"/>
+		private SftpStatVFS _statVFS(byte[] path)
+		{
+			if (!extension_statvfs)
+			{
+				throw new SftpException(SSH_FX_OP_UNSUPPORTED, "statvfs@openssh.com is not supported"
+					);
+			}
+			try
+			{
+				sendSTATVFS(path);
+				ChannelHeader header = new ChannelHeader(this);
+				header = Header(buf, header);
+				int Length = header.length;
+				int type = header.type;
+				Fill(buf, Length);
+				if (type != (SSH_FXP_EXTENDED_REPLY & unchecked((int)(0xff))))
+				{
+					if (type == SSH_FXP_STATUS)
+					{
+						int i = buf.GetInt();
+						ThrowStatusError(buf, i);
+					}
+					throw new SftpException(SSH_FX_FAILURE, string.Empty);
+				}
+				else
+				{
+					SftpStatVFS stat = SftpStatVFS.getStatVFS(buf);
+					return stat;
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is SftpException)
+				{
+					throw (SftpException)e;
+				}
+				if (e is Exception)
+				{
+					throw new SftpException(SSH_FX_FAILURE, string.Empty, (Exception)e);
+				}
+				throw new SftpException(SSH_FX_FAILURE, string.Empty);
+			}
+		}
+
+		//return null;
+		/// <exception cref="NSch.SftpException"/>
+		private SftpStatVFS _statVFS(string path)
+		{
+			return _statVFS(Util.Str2byte(path, fEncoding));
+		}
+
+		/// <exception cref="NSch.SftpException"/>
 		public virtual SftpATTRS Lstat(string path)
 		{
 			try
@@ -3238,7 +3315,7 @@ loop_break: ;
 			{
 				len += (4 + extension.Length);
                 PutHEAD(SSH_FXP_EXTENDED, len);
-			buf.PutInt(seq++);
+				buf.PutInt(seq++);
 				buf.PutString(Util.Str2byte(extension));
 			}
 			buf.PutString(path);
@@ -3266,7 +3343,7 @@ loop_break: ;
 			{
 				len += (4 + extension.Length);
 				PutHEAD(SSH_FXP_EXTENDED, len);
-			buf.PutInt(seq++);
+				buf.PutInt(seq++);
 				buf.PutString(Util.Str2byte(extension));
 			}
 			buf.PutString(p1);
