@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -37,9 +37,9 @@ namespace NSch
 {
 	public class HostKey
 	{
-		private static readonly byte[] sshdss = Util.Str2byte("ssh-dss");
-
-		private static readonly byte[] sshrsa = Util.Str2byte("ssh-rsa");
+		private static readonly byte[][] names = new byte[][] { Util.Str2byte("ssh-dss"
+			), Util.Str2byte("ssh-rsa"), Util.Str2byte("ecdsa-sha2-nistp256"), Util.Str2byte
+			("ecdsa-sha2-nistp384"), Util.Str2byte("ecdsa-sha2-nistp521") };
 
 		protected internal const int GUESS = 0;
 
@@ -47,13 +47,23 @@ namespace NSch
 
 		public const int SSHRSA = 2;
 
-		internal const int UNKNOWN = 3;
+		public const int ECDSA256 = 3;
+
+		public const int ECDSA384 = 4;
+
+		public const int ECDSA521 = 5;
+
+		internal const int UNKNOWN = 6;
+
+		protected internal string marker;
 
 		protected internal string host;
 
 		protected internal int type;
 
 		protected internal byte[] key;
+
+		protected internal string comment;
 
 		/// <exception cref="NSch.JSchException"/>
 		public HostKey(string host, byte[] key) : this(host, GUESS, key)
@@ -62,7 +72,20 @@ namespace NSch
 
 		/// <exception cref="NSch.JSchException"/>
 		public HostKey(string host, int type, byte[] key)
+			: this(host, type, key, null)
 		{
+		}
+
+		/// <exception cref="NSch.JSchException"/>
+		public HostKey(string host, int type, byte[] key, string comment)
+			: this(string.Empty, host, type, key, comment)
+		{
+		}
+
+		/// <exception cref="NSch.JSchException"/>
+		public HostKey(string marker, string host, int type, byte[] key, string comment)
+		{
+			this.marker = marker;
 			this.host = host;
 			if (type == GUESS)
 			{
@@ -78,7 +101,28 @@ namespace NSch
 					}
 					else
 					{
-						throw new JSchException("invalid key type");
+						if (key[8] == 'a' && key[20] == '2')
+						{
+							this.type = ECDSA256;
+						}
+						else
+						{
+							if (key[8] == 'a' && key[20] == '3')
+							{
+								this.type = ECDSA384;
+							}
+							else
+							{
+								if (key[8] == 'a' && key[20] == '5')
+								{
+									this.type = ECDSA521;
+								}
+								else
+								{
+									throw new JSchException("invalid key type");
+								}
+							}
+						}
 					}
 				}
 			}
@@ -87,6 +131,7 @@ namespace NSch
 				this.type = type;
 			}
 			this.key = key;
+			this.comment = comment;
 		}
 
 		public virtual string GetHost()
@@ -96,15 +141,24 @@ namespace NSch
 
 		public virtual string GetType()
 		{
-			if (type == SSHDSS)
+			if (type == SSHDSS || type == SSHRSA || type == ECDSA256 || type == ECDSA384 || type
+				 == ECDSA521)
 			{
-				return Util.Byte2str(sshdss);
-			}
-			if (type == SSHRSA)
-			{
-				return Util.Byte2str(sshrsa);
+				return Util.Byte2str(names[type - 1]);
 			}
 			return "UNKNOWN";
+		}
+
+		protected internal static int name2type(string name)
+		{
+			for (int i = 0; i < names.Length; i++)
+			{
+				if (Util.Byte2str(names[i]).Equals(name))
+				{
+					return i + 1;
+				}
+			}
+			return UNKNOWN;
 		}
 
 		public virtual string GetKey()
@@ -125,6 +179,16 @@ namespace NSch
 				System.Console.Error.WriteLine("getFingerPrint: " + e);
 			}
 			return Util.GetFingerPrint(hash, key);
+		}
+
+		public virtual string getComment()
+		{
+			return comment;
+		}
+
+		public virtual string getMarker()
+		{
+			return marker;
 		}
 
 		internal virtual bool IsMatched(string _host)
