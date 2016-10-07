@@ -1156,5 +1156,91 @@ namespace NSch
 		{
 			Clear();
 		}
+		/// <summary>Decrypts this identity with the specified pass-phrase.</summary>
+		/// <param name="passphrase">the pass-phrase for this identity.</param>
+		/// <returns>
+		/// <tt>true</tt> if the decryption is succeeded
+		/// or this identity is not cyphered.
+		/// </returns>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual bool setPassphrase(byte[] passphrase)
+		{
+			return kpair.Decrypt(passphrase);
+		}
+
+		/// <summary>Returns the public-key blob.</summary>
+		/// <returns>the public-key blob</returns>
+		public virtual byte[] getPublicKeyBlob()
+		{
+			return kpair.GetPublicKeyBlob();
+		}
+
+		/// <summary>Signs on data with this identity, and returns the result.</summary>
+		/// <param name="data">data to be signed</param>
+		/// <returns>the signature</returns>
+        //public virtual byte[] getSignature(byte[] data)
+        //{
+        //    return kpair.GetSignature(data);
+        //}
+
+		/// <seealso cref="setPassphrase(byte[])"/>
+		[System.ObsoleteAttribute(@"This method should not be invoked.")]
+		public virtual bool decrypt()
+		{
+			throw new RuntimeException("not implemented");
+		}
+
+		/// <summary>Returns the name of the key algorithm.</summary>
+		/// <returns>"ssh-rsa" or "ssh-dss"</returns>
+		public virtual string getAlgName()
+		{
+			return Sharpen.Runtime.GetStringForBytes(kpair.GetKeyTypeName());
+		}
+
+		/// <summary>Returns the name of this identity.</summary>
+		/// <remarks>
+		/// Returns the name of this identity.
+		/// It will be useful to identify this object in the
+		/// <see cref="IdentityRepository"/>
+		/// .
+		/// </remarks>
+		public virtual string getName()
+		{
+			return identity;
+		}
+
+		/// <summary>Returns <tt>true</tt> if this identity is cyphered.</summary>
+		/// <returns><tt>true</tt> if this identity is cyphered.</returns>
+		public virtual bool isEncrypted()
+		{
+			return kpair.IsEncrypted();
+		}
+
+		/// <summary>Disposes internally allocated data, like byte array for the private key.
+		/// 	</summary>
+		public virtual void clear()
+		{
+			kpair.Dispose();
+			kpair = null;
+		}
+
+		/// <summary>
+		/// Returns an instance of
+		/// <see cref="KeyPair"/>
+		/// used in this
+		/// <see cref="Identity"/>
+		/// .
+		/// </summary>
+		/// <returns>
+		/// an instance of
+		/// <see cref="KeyPair"/>
+		/// used in this
+		/// <see cref="Identity"/>
+		/// .
+		/// </returns>
+		public virtual NSch.KeyPair getKeyPair()
+		{
+			return kpair;
+		}
 	}
 }
