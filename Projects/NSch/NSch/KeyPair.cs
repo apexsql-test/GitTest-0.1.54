@@ -128,9 +128,21 @@ namespace NSch
 		/// <seealso cref="writePrivateKey(Sharpen.OutputStream, byte[])"/>
 		public virtual void WritePrivateKey(OutputStream @out)
 		{
+            this.WritePrivateKey(@out, null);
+		}
+
+		/// <summary>Writes the cyphered private key to the given output stream.</summary>
+		/// <param name="out">output stream</param>
+		/// <param name="passphrase">a passphrase to encrypt the private key</param>
+        public virtual void WritePrivateKey(OutputStream @out, byte[] passphrase)
+		{
+			if (passphrase == null)
+			{
+				passphrase = this.passphrase;
+			}
 			byte[] plain = GetPrivateKey();
 			byte[][] _iv = new byte[1][];
-			byte[] encoded = Encrypt(plain, _iv);
+            byte[] encoded = Encrypt(plain, _iv, passphrase);
 			if (encoded != plain)
 			{
 				Util.Bzero(plain);
@@ -286,6 +298,17 @@ namespace NSch
 		/// <exception cref="System.IO.IOException"/>
 		public virtual void WritePrivateKey(string name)
 		{
+			this.WritePrivateKey(name, null);
+		}
+
+		/// <summary>Writes the cyphered private key to the file.</summary>
+		/// <param name="name">file name</param>
+		/// <param name="passphrase">a passphrase to encrypt the private key</param>
+		/// <seealso cref="writePrivateKey(Sharpen.OutputStream, byte[])"/>
+		/// <exception cref="System.IO.FileNotFoundException"/>
+		/// <exception cref="System.IO.IOException"/>
+		public virtual void WritePrivateKey(string name, byte[] passphrase)
+		{
 			FileOutputStream fos = new FileOutputStream(name);
 			WritePrivateKey(fos);
 			fos.Close();
@@ -304,10 +327,10 @@ namespace NSch
 			{
 				return null;
 			}
-			return GetKeySize() + " " + Util.GetFingerPrint(hash, kblob);
+			return Util.GetFingerPrint(hash, kblob);
 		}
 
-		private byte[] Encrypt(byte[] plain, byte[][] _iv)
+		private byte[] Encrypt(byte[] plain, byte[][] _iv, byte[] passphrase)
 		{
 			if (passphrase == null)
 			{
@@ -546,6 +569,8 @@ namespace NSch
 			}
 		}
 
+		[System.ObsoleteAttribute(@"use #writePrivateKey(java.io.OutputStream out, byte[] passphrase)"
+			)]
 		public virtual void SetPassphrase(string passphrase)
 		{
 			if (passphrase == null || passphrase.Length == 0)
@@ -558,6 +583,8 @@ namespace NSch
 			}
 		}
 
+		[System.ObsoleteAttribute(@"use #writePrivateKey(String name, byte[] passphrase)"
+			)]
 		public virtual void SetPassphrase(byte[] passphrase)
 		{
 			if (passphrase != null && passphrase.Length == 0)
