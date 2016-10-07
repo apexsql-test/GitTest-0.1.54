@@ -33,24 +33,12 @@ using Sharpen;
 
 namespace NSch
 {
-	public interface SignatureDSA
+	public interface SignatureDSA : SignatureBase
 	{
-		/// <exception cref="System.Exception"></exception>
-		void Init();
-
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		void SetPubKey(byte[] y, byte[] p, byte[] q, byte[] g);
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		void SetPrvKey(byte[] x, byte[] p, byte[] q, byte[] g);
-
-		/// <exception cref="System.Exception"></exception>
-		void Update(byte[] H);
-
-		/// <exception cref="System.Exception"></exception>
-		bool Verify(byte[] sig);
-
-		/// <exception cref="System.Exception"></exception>
-		byte[] Sign();
 	}
 }

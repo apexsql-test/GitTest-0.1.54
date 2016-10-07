@@ -30,35 +30,12 @@ using Sharpen;
 
 namespace NSch
 {
-/*
-	public abstract class SignatureECDSA : Signature
-	{
-		/// <exception cref="System.Exception"/>
-		public abstract void SetPubKey(byte[] r, byte[] s);
+    public interface SignatureECDSA : SignatureBase
+    {
+        /// <exception cref="System.Exception"/>
+        void SetPubKey(byte[] r, byte[] s);
 
-		/// <exception cref="System.Exception"/>
-    public abstract void SetPrvKey(byte[] s);
-	}
-*/
-
-	public interface SignatureECDSA
-	{
-		/// <exception cref="System.Exception"/>
-		void Init();
-
-		/// <exception cref="System.Exception"/>
-		void SetPubKey(byte[] r, byte[] s);
-
-		/// <exception cref="System.Exception"/>
-		void SetPrvKey(byte[] s);
-
-		/// <exception cref="System.Exception"/>
-		void Update(byte[] H);
-
-		/// <exception cref="System.Exception"/>
-		bool Verify(byte[] sig);
-
-		/// <exception cref="System.Exception"/>
-		byte[] Sign();
-	}
+        /// <exception cref="System.Exception"/>
+        void SetPrvKey(byte[] s);
+    }
 }

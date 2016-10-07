@@ -100,6 +100,7 @@
     <Compile Include="NSch\SftpException.cs" />
     <Compile Include="NSch\SftpProgressMonitor.cs" />
     <Compile Include="NSch\SftpStatVFS.cs" />
+    <Compile Include="NSch\Signature.cs" />
     <Compile Include="NSch\SignatureDSA.cs" />
     <Compile Include="NSch\SignatureECDSA.cs" />
     <Compile Include="NSch\SignatureRSA.cs" />
