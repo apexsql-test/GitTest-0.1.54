@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -138,7 +138,7 @@ namespace NSch
 			}
 		}
 
-		public ChannelX11() : base()
+		internal ChannelX11(): base()
 		{
 			SetLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
 			SetLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
@@ -212,7 +212,7 @@ namespace NSch
 			return cache;
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal override void Write(byte[] foo, int s, int l)
 		{
 			//if(eof_local)return;

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2005-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ using Sharpen;
 
 namespace NSch
 {
-	class ChannelSubsystem : ChannelSession
+	public class ChannelSubsystem : ChannelSession
 	{
 		internal bool xforwading = false;
 
@@ -65,7 +65,7 @@ namespace NSch
 			subsystem = foo;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public override void Start()
 		{
 			Session _session = GetSession();
@@ -109,7 +109,7 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal override void Init()
 		{
 			io.SetInputStream(GetSession().@in);
@@ -121,7 +121,7 @@ namespace NSch
 			SetExtOutputStream(@out);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		public virtual InputStream GetErrStream()
 		{
 			return GetExtInputStream();
