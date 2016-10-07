@@ -310,7 +310,7 @@ namespace NSch
 		public virtual void WritePrivateKey(string name, byte[] passphrase)
 		{
 			FileOutputStream fos = new FileOutputStream(name);
-			WritePrivateKey(fos);
+			WritePrivateKey(fos, passphrase);
 			fos.Close();
 		}
 
@@ -1085,6 +1085,615 @@ namespace NSch
 				}
 			}
 			return kpair;
+		}
+
+		/// <exception cref="NSch.JSchException"/>
+		public static NSch.KeyPair load(JSch jsch, byte[] prvkey, byte[] pubkey)
+		{
+			byte[] iv = new byte[8];
+			// 8
+			bool encrypted = true;
+			byte[] data = null;
+			byte[] publickeyblob = null;
+			int type = ERROR;
+			int vendor = VENDOR_OPENSSH;
+			string publicKeyComment = string.Empty;
+			NSch.Cipher cipher = null;
+			// prvkey from "ssh-add" command on the remote.
+			if (pubkey == null && prvkey != null && (prvkey.Length > 11 && prvkey[0] == 0 && 
+				prvkey[1] == 0 && prvkey[2] == 0 && (prvkey[3] == 7 || prvkey[3] == 19)))
+			{
+				Buffer buf = new Buffer(prvkey);
+				buf.Skip(prvkey.Length);
+				// for using Buffer#available()
+				string _type = Sharpen.Runtime.GetStringForBytes(buf.GetString());
+				// ssh-rsa or ssh-dss
+				buf.Rewind();
+				NSch.KeyPair kpair = null;
+                //if (_type.Equals("ssh-rsa"))
+                //{
+                //    kpair = KeyPairRSA.FromSSHAgent(jsch, buf);
+                //}
+                //else
+				{
+                    //if (_type.Equals("ssh-dss"))
+                    //{
+                    //    kpair = KeyPairDSA.FromSSHAgent(jsch, buf);
+                    //}
+                    //else
+					{
+                        //if (_type.Equals("ecdsa-sha2-nistp256") || _type.Equals("ecdsa-sha2-nistp384") ||
+                        //     _type.Equals("ecdsa-sha2-nistp512"))
+                        //{
+                        //    kpair = KeyPairECDSA.fromSSHAgent(jsch, buf);
+                        //}
+                        //else
+						{
+							throw new JSchException("privatekey: invalid key " + Sharpen.Runtime.GetStringForBytes
+								(prvkey, 4, 7));
+						}
+					}
+				}
+				return kpair;
+			}
+			try
+			{
+				byte[] buf = prvkey;
+				if (buf != null)
+				{
+                    //NSch.KeyPair ppk = LoadPPK(jsch, buf);
+                    //if (ppk != null)
+                    //{
+                    //    return ppk;
+                    //}
+				}
+				int len = (buf != null ? buf.Length : 0);
+				int i = 0;
+				// skip garbage lines.
+				while (i < len)
+				{
+					if (buf[i] == '-' && i + 4 < len && buf[i + 1] == '-' && buf[i + 2] == '-' && buf
+						[i + 3] == '-' && buf[i + 4] == '-')
+					{
+						break;
+					}
+					i++;
+				}
+				while (i < len)
+				{
+					if (buf[i] == 'B' && i + 3 < len && buf[i + 1] == 'E' && buf[i + 2] == 'G' && buf
+						[i + 3] == 'I')
+					{
+						i += 6;
+						if (i + 2 >= len)
+						{
+							throw new JSchException("invalid privatekey: " + prvkey);
+						}
+						if (buf[i] == 'D' && buf[i + 1] == 'S' && buf[i + 2] == 'A')
+						{
+							type = DSA;
+						}
+						else
+						{
+							if (buf[i] == 'R' && buf[i + 1] == 'S' && buf[i + 2] == 'A')
+							{
+								type = RSA;
+							}
+							else
+							{
+								if (buf[i] == 'E' && buf[i + 1] == 'C')
+								{
+									type = ECDSA;
+								}
+								else
+								{
+									if (buf[i] == 'S' && buf[i + 1] == 'S' && buf[i + 2] == 'H')
+									{
+										// FSecure
+										type = UNKNOWN;
+										vendor = VENDOR_FSECURE;
+									}
+									else
+									{
+										if (i + 6 < len && buf[i] == 'P' && buf[i + 1] == 'R' && buf[i + 2] == 'I' && buf
+											[i + 3] == 'V' && buf[i + 4] == 'A' && buf[i + 5] == 'T' && buf[i + 6] == 'E')
+										{
+											type = UNKNOWN;
+											vendor = VENDOR_PKCS8;
+											encrypted = false;
+											i += 3;
+										}
+										else
+										{
+											if (i + 8 < len && buf[i] == 'E' && buf[i + 1] == 'N' && buf[i + 2] == 'C' && buf
+												[i + 3] == 'R' && buf[i + 4] == 'Y' && buf[i + 5] == 'P' && buf[i + 6] == 'T' &&
+												 buf[i + 7] == 'E' && buf[i + 8] == 'D')
+											{
+												type = UNKNOWN;
+												vendor = VENDOR_PKCS8;
+												i += 5;
+											}
+											else
+											{
+												throw new JSchException("invalid privatekey: " + prvkey);
+											}
+										}
+									}
+								}
+							}
+						}
+						i += 3;
+						continue;
+					}
+					if (buf[i] == 'A' && i + 7 < len && buf[i + 1] == 'E' && buf[i + 2] == 'S' && buf
+						[i + 3] == '-' && buf[i + 4] == '2' && buf[i + 5] == '5' && buf[i + 6] == '6' &&
+						 buf[i + 7] == '-')
+					{
+						i += 8;
+						if (Session.CheckCipher((string)JSch.GetConfig("aes256-cbc")))
+						{
+							Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes256-cbc"));
+							cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
+							// key=new byte[cipher.getBlockSize()];
+							iv = new byte[cipher.GetIVSize()];
+						}
+						else
+						{
+							throw new JSchException("privatekey: aes256-cbc is not available " + prvkey);
+						}
+						continue;
+					}
+					if (buf[i] == 'A' && i + 7 < len && buf[i + 1] == 'E' && buf[i + 2] == 'S' && buf
+						[i + 3] == '-' && buf[i + 4] == '1' && buf[i + 5] == '9' && buf[i + 6] == '2' &&
+						 buf[i + 7] == '-')
+					{
+						i += 8;
+						if (Session.CheckCipher((string)JSch.GetConfig("aes192-cbc")))
+						{
+							Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes192-cbc"));
+							cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
+							// key=new byte[cipher.getBlockSize()];
+							iv = new byte[cipher.GetIVSize()];
+						}
+						else
+						{
+							throw new JSchException("privatekey: aes192-cbc is not available " + prvkey);
+						}
+						continue;
+					}
+					if (buf[i] == 'A' && i + 7 < len && buf[i + 1] == 'E' && buf[i + 2] == 'S' && buf
+						[i + 3] == '-' && buf[i + 4] == '1' && buf[i + 5] == '2' && buf[i + 6] == '8' &&
+						 buf[i + 7] == '-')
+					{
+						i += 8;
+						if (Session.CheckCipher((string)JSch.GetConfig("aes128-cbc")))
+						{
+							Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes128-cbc"));
+							cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
+							// key=new byte[cipher.getBlockSize()];
+							iv = new byte[cipher.GetIVSize()];
+						}
+						else
+						{
+							throw new JSchException("privatekey: aes128-cbc is not available " + prvkey);
+						}
+						continue;
+					}
+					if (buf[i] == 'C' && i + 3 < len && buf[i + 1] == 'B' && buf[i + 2] == 'C' && buf
+						[i + 3] == ',')
+					{
+						i += 4;
+						for (int ii = 0; ii < iv.Length; ii++)
+						{
+							iv[ii] = unchecked((byte)(((A2b(buf[i++]) << 4) & unchecked((int)(0xf0))) + (A2b
+								(buf[i++]) & unchecked((int)(0xf)))));
+						}
+						continue;
+					}
+					if (buf[i] == unchecked((int)(0x0d)) && i + 1 < buf.Length && buf[i + 1] == unchecked(
+						(int)(0x0a)))
+					{
+						i++;
+						continue;
+					}
+					if (buf[i] == unchecked((int)(0x0a)) && i + 1 < buf.Length)
+					{
+						if (buf[i + 1] == unchecked((int)(0x0a)))
+						{
+							i += 2;
+							break;
+						}
+						if (buf[i + 1] == unchecked((int)(0x0d)) && i + 2 < buf.Length && buf[i + 2] == unchecked(
+							(int)(0x0a)))
+						{
+							i += 3;
+							break;
+						}
+						bool inheader = false;
+						for (int j = i + 1; j < buf.Length; j++)
+						{
+							if (buf[j] == unchecked((int)(0x0a)))
+							{
+								break;
+							}
+							//if(buf[j]==0x0d) break;
+							if (buf[j] == ':')
+							{
+								inheader = true;
+								break;
+							}
+						}
+						if (!inheader)
+						{
+							i++;
+							if (vendor != VENDOR_PKCS8)
+							{
+								encrypted = false;
+							}
+							// no passphrase
+							break;
+						}
+					}
+					i++;
+				}
+				if (buf != null)
+				{
+					if (type == ERROR)
+					{
+						throw new JSchException("invalid privatekey: " + prvkey);
+					}
+					int start = i;
+					while (i < len)
+					{
+						if (buf[i] == '-')
+						{
+							break;
+						}
+						i++;
+					}
+					if ((len - i) == 0 || (i - start) == 0)
+					{
+						throw new JSchException("invalid privatekey: " + prvkey);
+					}
+					// The content of 'buf' will be changed, so it should be copied.
+					byte[] tmp = new byte[i - start];
+					System.Array.Copy(buf, start, tmp, 0, tmp.Length);
+					byte[] _buf = tmp;
+					start = 0;
+					i = 0;
+					int _len = _buf.Length;
+					while (i < _len)
+					{
+						if (_buf[i] == unchecked((int)(0x0a)))
+						{
+							bool xd = (_buf[i - 1] == unchecked((int)(0x0d)));
+							// ignore 0x0a (or 0x0d0x0a)
+							System.Array.Copy(_buf, i + 1, _buf, i - (xd ? 1 : 0), _len - (i + 1));
+							if (xd)
+							{
+								_len--;
+							}
+							_len--;
+							continue;
+						}
+						if (_buf[i] == '-')
+						{
+							break;
+						}
+						i++;
+					}
+					if (i - start > 0)
+					{
+						data = Util.FromBase64(_buf, start, i - start);
+					}
+					Util.Bzero(_buf);
+				}
+				if (data != null && data.Length > 4 && data[0] == unchecked((byte)0x3f) && data[
+					1] == unchecked((byte)0x6f) && data[2] == unchecked((byte)0xf9) && data[3] == 
+					unchecked((byte)0xeb))
+				{
+					// FSecure
+					Buffer _buf = new Buffer(data);
+					_buf.GetInt();
+					// 0x3f6ff9be
+					_buf.GetInt();
+					byte[] _type = _buf.GetString();
+					//System.err.println("type: "+new String(_type)); 
+					string _cipher = Util.Byte2str(_buf.GetString());
+					//System.err.println("cipher: "+_cipher); 
+					if (_cipher.Equals("3des-cbc"))
+					{
+						_buf.GetInt();
+						byte[] foo = new byte[data.Length - _buf.GetOffSet()];
+						_buf.GetByte(foo);
+						data = foo;
+						encrypted = true;
+						throw new JSchException("unknown privatekey format: " + prvkey);
+					}
+					else
+					{
+						if (_cipher.Equals("none"))
+						{
+							_buf.GetInt();
+							_buf.GetInt();
+							encrypted = false;
+							byte[] foo = new byte[data.Length - _buf.GetOffSet()];
+							_buf.GetByte(foo);
+							data = foo;
+						}
+					}
+				}
+				if (pubkey != null)
+				{
+					try
+					{
+						buf = pubkey;
+						len = buf.Length;
+						if (buf.Length > 4 && buf[0] == '-' && buf[1] == '-' && buf[2] == '-' && buf[3] ==
+							 '-')
+						{
+							// FSecure's public key
+							bool valid = true;
+							i = 0;
+							do
+							{
+								i++;
+							}
+							while (buf.Length > i && buf[i] != unchecked((int)(0x0a)));
+							if (buf.Length <= i)
+							{
+								valid = false;
+							}
+							while (valid)
+							{
+								if (buf[i] == unchecked((int)(0x0a)))
+								{
+									bool inheader = false;
+									for (int j = i + 1; j < buf.Length; j++)
+									{
+										if (buf[j] == unchecked((int)(0x0a)))
+										{
+											break;
+										}
+										if (buf[j] == ':')
+										{
+											inheader = true;
+											break;
+										}
+									}
+									if (!inheader)
+									{
+										i++;
+										break;
+									}
+								}
+								i++;
+							}
+							if (buf.Length <= i)
+							{
+								valid = false;
+							}
+							int start = i;
+							while (valid && i < len)
+							{
+								if (buf[i] == unchecked((int)(0x0a)))
+								{
+									System.Array.Copy(buf, i + 1, buf, i, len - i - 1);
+									len--;
+									continue;
+								}
+								if (buf[i] == '-')
+								{
+									break;
+								}
+								i++;
+							}
+							if (valid)
+							{
+								publickeyblob = Util.FromBase64(buf, start, i - start);
+								if (prvkey == null || type == UNKNOWN)
+								{
+									if (publickeyblob[8] == 'd')
+									{
+										type = DSA;
+									}
+									else
+									{
+										if (publickeyblob[8] == 'r')
+										{
+											type = RSA;
+										}
+									}
+								}
+							}
+						}
+						else
+						{
+							if (buf[0] == 's' && buf[1] == 's' && buf[2] == 'h' && buf[3] == '-')
+							{
+								if (prvkey == null && buf.Length > 7)
+								{
+									if (buf[4] == 'd')
+									{
+										type = DSA;
+									}
+									else
+									{
+										if (buf[4] == 'r')
+										{
+											type = RSA;
+										}
+									}
+								}
+								i = 0;
+								while (i < len)
+								{
+									if (buf[i] == ' ')
+									{
+										break;
+									}
+									i++;
+								}
+								i++;
+								if (i < len)
+								{
+									int start = i;
+									while (i < len)
+									{
+										if (buf[i] == ' ')
+										{
+											break;
+										}
+										i++;
+									}
+									publickeyblob = Util.FromBase64(buf, start, i - start);
+								}
+								if (i++ < len)
+								{
+									int start = i;
+									while (i < len)
+									{
+										if (buf[i] == '\n')
+										{
+											break;
+										}
+										i++;
+									}
+									if (i > 0 && buf[i - 1] == unchecked((int)(0x0d)))
+									{
+										i--;
+									}
+									if (start < i)
+									{
+										publicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
+									}
+								}
+							}
+							else
+							{
+								if (buf[0] == 'e' && buf[1] == 'c' && buf[2] == 'd' && buf[3] == 's')
+								{
+									if (prvkey == null && buf.Length > 7)
+									{
+										type = ECDSA;
+									}
+									i = 0;
+									while (i < len)
+									{
+										if (buf[i] == ' ')
+										{
+											break;
+										}
+										i++;
+									}
+									i++;
+									if (i < len)
+									{
+										int start = i;
+										while (i < len)
+										{
+											if (buf[i] == ' ')
+											{
+												break;
+											}
+											i++;
+										}
+										publickeyblob = Util.FromBase64(buf, start, i - start);
+									}
+									if (i++ < len)
+									{
+										int start = i;
+										while (i < len)
+										{
+											if (buf[i] == '\n')
+											{
+												break;
+											}
+											i++;
+										}
+										if (i > 0 && buf[i - 1] == unchecked((int)(0x0d)))
+										{
+											i--;
+										}
+										if (start < i)
+										{
+											publicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
+										}
+									}
+								}
+							}
+						}
+					}
+					catch (Exception)
+					{
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is JSchException)
+				{
+					throw (JSchException)e;
+				}
+				if (e is Exception)
+				{
+					throw new JSchException(e.ToString(), (Exception)e);
+				}
+				throw new JSchException(e.ToString());
+			}
+			NSch.KeyPair kpair_1 = null;
+			if (type == DSA)
+			{
+				kpair_1 = new KeyPairDSA(jsch);
+			}
+			else
+			{
+				if (type == RSA)
+				{
+					kpair_1 = new KeyPairRSA(jsch);
+				}
+				else
+				{
+                    //if (type == ECDSA)
+                    //{
+                    //    kpair_1 = new KeyPairECDSA(jsch);
+                    //}
+                    //else
+                    //{
+                    //    if (vendor == VENDOR_PKCS8)
+                    //    {
+                    //        kpair_1 = new KeyPairPKCS8(jsch);
+                    //    }
+                    //}
+				}
+			}
+			if (kpair_1 != null)
+			{
+				kpair_1.encrypted = encrypted;
+				kpair_1.publickeyblob = publickeyblob;
+				kpair_1.vendor = vendor;
+				kpair_1.publicKeyComment = publicKeyComment;
+				kpair_1.cipher = cipher;
+				if (encrypted)
+				{
+					kpair_1.encrypted = true;
+					kpair_1.iv = iv;
+					kpair_1.data = data;
+				}
+				else
+				{
+					if (kpair_1.Parse(data))
+					{
+						kpair_1.encrypted = false;
+						return kpair_1;
+					}
+					else
+					{
+						throw new JSchException("invalid privatekey: " + prvkey);
+					}
+				}
+			}
+			return kpair_1;
 		}
 
 		private static byte A2b(byte c)
