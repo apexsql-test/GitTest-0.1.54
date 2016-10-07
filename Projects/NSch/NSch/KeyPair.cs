@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -43,23 +43,29 @@ namespace NSch
 
 		public const int RSA = 2;
 
-		public const int UNKNOWN = 3;
+		public const int ECDSA = 3;
+
+		public const int UNKNOWN = 4;
 
 		internal const int VENDOR_OPENSSH = 0;
 
 		internal const int VENDOR_FSECURE = 1;
 
+		internal const int VENDOR_PUTTY = 2;
+
+		internal const int VENDOR_PKCS8 = 3;
+
 		internal int vendor = VENDOR_OPENSSH;
 
 		private static readonly byte[] cr = Util.Str2byte("\n");
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public static NSch.KeyPair GenKeyPair(JSch jsch, int type)
 		{
 			return GenKeyPair(jsch, type, 1024);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public static NSch.KeyPair GenKeyPair(JSch jsch, int type, int key_size)
 		{
 			NSch.KeyPair kpair = null;
@@ -81,7 +87,7 @@ namespace NSch
 			return kpair;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal abstract void Generate(int key_size);
 
 		internal abstract byte[] GetBegin();
@@ -117,6 +123,9 @@ namespace NSch
 
 		internal abstract byte[] GetPrivateKey();
 
+		/// <summary>Writes the plain private key to the given output stream.</summary>
+		/// <param name="out">output stream</param>
+		/// <seealso cref="writePrivateKey(Sharpen.OutputStream, byte[])"/>
 		public virtual void WritePrivateKey(OutputStream @out)
 		{
 			byte[] plain = GetPrivateKey();
@@ -174,11 +183,19 @@ namespace NSch
 
 		public abstract int GetKeyType();
 
+		/// <summary>Returns the blob of the public key.</summary>
+		/// <returns>blob of the public key</returns>
 		public virtual byte[] GetPublicKeyBlob()
 		{
+			// TODO JSchException should be thrown
+			//if(publickeyblob == null)
+			//  throw new JSchException("public-key blob is not available");
 			return publickeyblob;
 		}
 
+		/// <summary>Writes the public key with the specified comment to the output stream.</summary>
+		/// <param name="out">output stream</param>
+		/// <param name="comment">comment</param>
 		public virtual void WritePublicKey(OutputStream @out, string comment)
 		{
 			byte[] pubblob = GetPublicKeyBlob();
@@ -197,8 +214,12 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="System.IO.FileNotFoundException"></exception>
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <summary>Writes the public key with the specified comment to the file.</summary>
+		/// <param name="name">file name</param>
+		/// <param name="comment">comment</param>
+		/// <seealso cref="writePublicKey(Sharpen.OutputStream, string)"/>
+		/// <exception cref="System.IO.FileNotFoundException"/>
+		/// <exception cref="System.IO.IOException"/>
 		public virtual void WritePublicKey(string name, string comment)
 		{
 			FileOutputStream fos = new FileOutputStream(name);
@@ -206,6 +227,12 @@ namespace NSch
 			fos.Close();
 		}
 
+		/// <summary>
+		/// Writes the public key with the specified comment to the output stream in
+		/// the format defined in http://www.ietf.org/rfc/rfc4716.txt
+		/// </summary>
+		/// <param name="out">output stream</param>
+		/// <param name="comment">comment</param>
 		public virtual void WriteSECSHPublicKey(OutputStream @out, string comment)
 		{
 			byte[] pubblob = GetPublicKeyBlob();
@@ -236,8 +263,15 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="System.IO.FileNotFoundException"></exception>
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <summary>
+		/// Writes the public key with the specified comment to the output stream in
+		/// the format defined in http://www.ietf.org/rfc/rfc4716.txt
+		/// </summary>
+		/// <param name="name">file name</param>
+		/// <param name="comment">comment</param>
+		/// <seealso cref="writeSECSHPublicKey(Sharpen.OutputStream, string)"/>
+		/// <exception cref="System.IO.FileNotFoundException"/>
+		/// <exception cref="System.IO.IOException"/>
 		public virtual void WriteSECSHPublicKey(string name, string comment)
 		{
 			FileOutputStream fos = new FileOutputStream(name);
@@ -245,8 +279,11 @@ namespace NSch
 			fos.Close();
 		}
 
-		/// <exception cref="System.IO.FileNotFoundException"></exception>
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <summary>Writes the plain private key to the file.</summary>
+		/// <param name="name">file name</param>
+		/// <seealso cref="writePrivateKey(string, byte[])"/>
+		/// <exception cref="System.IO.FileNotFoundException"/>
+		/// <exception cref="System.IO.IOException"/>
 		public virtual void WritePrivateKey(string name)
 		{
 			FileOutputStream fos = new FileOutputStream(name);
@@ -254,6 +291,8 @@ namespace NSch
 			fos.Close();
 		}
 
+		/// <summary>Returns the finger-print of the public key.</summary>
+		/// <returns>finger print</returns>
 		public virtual string GetFingerPrint()
 		{
 			if (hash == null)
@@ -342,6 +381,24 @@ namespace NSch
 		internal virtual int WriteINTEGER(byte[] buf, int index, byte[] data)
 		{
 			buf[index++] = unchecked((int)(0x02));
+			index = WriteLength(buf, index, data.Length);
+			System.Array.Copy(data, 0, buf, index, data.Length);
+			index += data.Length;
+			return index;
+		}
+
+		internal virtual int writeOCTETSTRING(byte[] buf, int index, byte[] data)
+		{
+			buf[index++] = unchecked((int)(0x04));
+			index = WriteLength(buf, index, data.Length);
+			System.Array.Copy(data, 0, buf, index, data.Length);
+			index += data.Length;
+			return index;
+		}
+
+		internal virtual int writeDATA(byte[] buf, byte n, int index, byte[] data)
+		{
+			buf[index++] = n;
 			index = WriteLength(buf, index, data.Length);
 			System.Array.Copy(data, 0, buf, index, data.Length);
 			index += data.Length;
@@ -554,7 +611,7 @@ namespace NSch
 			return !encrypted;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public static NSch.KeyPair Load(JSch jsch, string prvkey)
 		{
 			string pubkey = prvkey + ".pub";
@@ -565,7 +622,7 @@ namespace NSch
 			return Load(jsch, prvkey, pubkey);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public static NSch.KeyPair Load(JSch jsch, string prvkey, string pubkey)
 		{
 			byte[] iv = new byte[8];
