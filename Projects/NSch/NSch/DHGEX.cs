@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -79,12 +79,7 @@ namespace NSch
 
 		private byte[] e;
 
-		//  static int min=512;
-		//  static int preferred=1024;
-		//  static int max=2000;
-		//  com.jcraft.jsch.DH dh;
-		//private byte[] f;
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override void Init(Session session, byte[] V_S, byte[] V_C, byte[] I_S, byte
 			[] I_C)
 		{
@@ -113,7 +108,6 @@ namespace NSch
 			}
 			catch (Exception e)
 			{
-				//      System.err.println(e);
 				throw;
 			}
 			packet.Reset();
@@ -124,14 +118,13 @@ namespace NSch
 			session.Write(packet);
 			if (JSch.GetLogger().IsEnabled(Logger.INFO))
 			{
-				JSch.GetLogger().Log(Logger.INFO, "SSH_MSG_KEX_DH_GEX_REQUEST(" + min + "<" + preferred
-					 + "<" + max + ") sent");
+				JSch.GetLogger().Log(Logger.INFO, "SSH_MSG_KEX_DH_GEX_REQUEST(" + min + "<" + preferred					 + "<" + max + ") sent");
 				JSch.GetLogger().Log(Logger.INFO, "expecting SSH_MSG_KEX_DH_GEX_GROUP");
 			}
 			state = SSH_MSG_KEX_DH_GEX_GROUP;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override bool Next(Buffer _buf)
 		{
 			int i;
@@ -190,13 +183,6 @@ namespace NSch
 						return false;
 					}
 					K_S = _buf.GetString();
-					// K_S is server_key_blob, which includes ....
-					// string ssh-dss
-					// impint p of dsa
-					// impint q of dsa
-					// impint g of dsa
-					// impint pub_key of dsa
-					//System.err.print("K_S: "); dump(K_S, 0, K_S.length);
 					byte[] f = _buf.GetMPInt();
 					byte[] sig_of_H = _buf.GetString();
 					dh.SetF(f);

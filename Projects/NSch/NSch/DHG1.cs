@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -134,11 +134,7 @@ namespace NSch
 
 		private Packet packet;
 
-		//  HASH sha;
-		//  byte[] K;
-		//  byte[] H;
-		//  byte[] K_S;
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override void Init(Session session, byte[] V_S, byte[] V_C, byte[] I_S, byte
 			[] I_C)
 		{
@@ -147,8 +143,6 @@ namespace NSch
 			this.V_C = V_C;
 			this.I_S = I_S;
 			this.I_C = I_C;
-			//    sha=new SHA1();
-			//    sha.init();
 			try
 			{
 				Type c = Sharpen.Runtime.GetType(session.GetConfig("sha-1"));
@@ -191,7 +185,7 @@ namespace NSch
 			state = SSH_MSG_KEXDH_REPLY;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override bool Next(Buffer _buf)
 		{
 			int i;
@@ -214,13 +208,6 @@ namespace NSch
 						return false;
 					}
 					K_S = _buf.GetString();
-					// K_S is server_key_blob, which includes ....
-					// string ssh-dss
-					// impint p of dsa
-					// impint q of dsa
-					// impint g of dsa
-					// impint pub_key of dsa
-					//System.err.print("K_S: "); //dump(K_S, 0, K_S.length);
 					byte[] f = _buf.GetMPInt();
 					byte[] sig_of_H = _buf.GetString();
 					dh.SetF(f);
