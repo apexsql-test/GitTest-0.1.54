@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2004-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -35,12 +35,12 @@ namespace NSch
 {
 	public interface GSSContext
 	{
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		void Create(string user, string host);
 
 		bool IsEstablished();
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		byte[] Init(byte[] token, int s, int l);
 
 		byte[] GetMIC(byte[] message, int s, int l);

@@ -55,12 +55,12 @@ namespace NSch
 
 		protected internal byte[] key;
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public HostKey(string host, byte[] key) : this(host, GUESS, key)
 		{
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public HostKey(string host, int type, byte[] key)
 		{
 			this.host = host;
