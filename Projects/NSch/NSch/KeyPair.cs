@@ -30,6 +30,7 @@ All credit should go to the authors of jsch.
 */
 
 using System;
+using System.Collections;
 using NSch;
 using Sharpen;
 
@@ -1722,6 +1723,362 @@ namespace NSch
 		~KeyPair()
 		{
 			Dispose();
+		}
+
+		private static readonly string[] header1 = new string[] { "PuTTY-User-Key-File-2: "
+			, "Encryption: ", "Comment: ", "Public-Lines: " };
+
+		private static readonly string[] header2 = new string[] { "Private-Lines: " };
+
+		private static readonly string[] header3 = new string[] { "Private-MAC: " };
+
+		/// <exception cref="NSch.JSchException"/>
+		internal static NSch.KeyPair loadPPK(JSch jsch, byte[] buf)
+		{
+			byte[] pubkey = null;
+			byte[] prvkey = null;
+			int lines = 0;
+			Buffer buffer = new Buffer(buf);
+			Hashtable v = new Hashtable();
+			while (true)
+			{
+				if (!parseHeader(buffer, v))
+				{
+					break;
+				}
+			}
+			string typ = (string)v["PuTTY-User-Key-File-2"];
+			if (typ == null)
+			{
+				return null;
+			}
+			lines = System.Convert.ToInt32((string)v["Public-Lines"]);
+			pubkey = parseLines(buffer, lines);
+			while (true)
+			{
+				if (!parseHeader(buffer, v))
+				{
+					break;
+				}
+			}
+			lines = System.Convert.ToInt32((string)v["Private-Lines"]);
+			prvkey = parseLines(buffer, lines);
+			while (true)
+			{
+				if (!parseHeader(buffer, v))
+				{
+					break;
+				}
+			}
+			prvkey = Util.FromBase64(prvkey, 0, prvkey.Length);
+			pubkey = Util.FromBase64(pubkey, 0, pubkey.Length);
+			NSch.KeyPair kpair = null;
+			if (typ.Equals("ssh-rsa"))
+			{
+				Buffer _buf = new Buffer(pubkey);
+				_buf.Skip(pubkey.Length);
+				int len = _buf.GetInt();
+				_buf.GetByte(new byte[len]);
+				// ssh-rsa
+				byte[] pub_array = new byte[_buf.GetInt()];
+				_buf.GetByte(pub_array);
+				byte[] n_array = new byte[_buf.GetInt()];
+				_buf.GetByte(n_array);
+                //kpair = new KeyPairRSA(jsch, n_array, pub_array, null);
+			}
+			else
+			{
+				if (typ.Equals("ssh-dss"))
+				{
+					Buffer _buf = new Buffer(pubkey);
+					_buf.Skip(pubkey.Length);
+					int len = _buf.GetInt();
+					_buf.GetByte(new byte[len]);
+					// ssh-dss
+					byte[] p_array = new byte[_buf.GetInt()];
+					_buf.GetByte(p_array);
+					byte[] q_array = new byte[_buf.GetInt()];
+					_buf.GetByte(q_array);
+					byte[] g_array = new byte[_buf.GetInt()];
+					_buf.GetByte(g_array);
+					byte[] y_array = new byte[_buf.GetInt()];
+					_buf.GetByte(y_array);
+                    //kpair = new KeyPairDSA(jsch, p_array, q_array, g_array, y_array, null);
+				}
+				else
+				{
+					return null;
+				}
+			}
+			if (kpair == null)
+			{
+				return null;
+			}
+			kpair.encrypted = !v["Encryption"].Equals("none");
+			kpair.vendor = VENDOR_PUTTY;
+			kpair.publicKeyComment = (string)v["Comment"];
+			if (kpair.encrypted)
+			{
+                //if (Session.CheckCipher((string)JSch.GetConfig("aes256-cbc")))
+                //{
+                //    try
+                //    {
+                //        Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes256-cbc"));
+                //        kpair.cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
+                //        kpair.iv = new byte[kpair.cipher.GetIVSize()];
+                //    }
+                //    catch (Exception)
+                //    {
+                //        throw new JSchException("The cipher 'aes256-cbc' is required, but it is not available."
+                //            );
+                //    }
+                //}
+                //else
+				{
+					throw new JSchException("The cipher 'aes256-cbc' is required, but it is not available."
+						);
+				}
+				kpair.data = prvkey;
+			}
+			else
+			{
+				kpair.data = prvkey;
+				kpair.Parse(prvkey);
+			}
+			return kpair;
+		}
+
+		private static byte[] parseLines(Buffer buffer, int lines)
+		{
+			byte[] buf = buffer.buffer;
+			int index = buffer.index;
+			byte[] data = null;
+			int i = index;
+			while (lines-- > 0)
+			{
+				while (buf.Length > i)
+				{
+					if (buf[i++] == unchecked((int)(0x0d)))
+					{
+						if (data == null)
+						{
+							data = new byte[i - index - 1];
+							System.Array.Copy(buf, index, data, 0, i - index - 1);
+						}
+						else
+						{
+							byte[] tmp = new byte[data.Length + i - index - 1];
+							System.Array.Copy(data, 0, tmp, 0, data.Length);
+							System.Array.Copy(buf, index, tmp, data.Length, i - index - 1);
+							for (int j = 0; j < data.Length; j++)
+							{
+								data[j] = 0;
+							}
+							// clear
+							data = tmp;
+						}
+						break;
+					}
+				}
+				if (buf[i] == unchecked((int)(0x0a)))
+				{
+					i++;
+				}
+				index = i;
+			}
+			if (data != null)
+			{
+				buffer.index = index;
+			}
+			return data;
+		}
+
+		private static bool parseHeader(Buffer buffer, Hashtable v)
+		{
+			byte[] buf = buffer.buffer;
+			int index = buffer.index;
+			string key = null;
+			string value = null;
+			for (int i = index; i < buf.Length; i++)
+			{
+				if (buf[i] == unchecked((int)(0x0d)))
+				{
+					break;
+				}
+				if (buf[i] == ':')
+				{
+					key = Sharpen.Runtime.GetStringForBytes(buf, index, i - index);
+					i++;
+					if (i < buf.Length && buf[i] == ' ')
+					{
+						i++;
+					}
+					index = i;
+					break;
+				}
+			}
+			if (key == null)
+			{
+				return false;
+			}
+			for (int i_1 = index; i_1 < buf.Length; i_1++)
+			{
+				if (buf[i_1] == unchecked((int)(0x0d)))
+				{
+					value = Sharpen.Runtime.GetStringForBytes(buf, index, i_1 - index);
+					i_1++;
+					if (i_1 < buf.Length && buf[i_1] == unchecked((int)(0x0a)))
+					{
+						i_1++;
+					}
+					index = i_1;
+					break;
+				}
+			}
+			if (value != null)
+			{
+				v.Put(key, value);
+				buffer.index = index;
+			}
+			return (key != null && value != null);
+		}
+
+		internal virtual void copy(NSch.KeyPair kpair)
+		{
+			this.publickeyblob = kpair.publickeyblob;
+			this.vendor = kpair.vendor;
+			this.publicKeyComment = kpair.publicKeyComment;
+			this.cipher = kpair.cipher;
+		}
+
+		[System.Serializable]
+		internal class ASN1Exception : Exception
+		{
+			internal ASN1Exception(KeyPair _enclosing)
+			{
+				this._enclosing = _enclosing;
+			}
+
+			private readonly KeyPair _enclosing;
+		}
+
+		internal class ASN1
+		{
+			internal byte[] buf;
+
+			internal int start;
+
+			internal int length;
+
+			/// <exception cref="NSch.KeyPair.ASN1Exception"/>
+            //internal ASN1(KeyPair _enclosing, byte[] buf)
+            //    : this(buf, 0, buf.Length)
+            //{
+            //    this._enclosing = _enclosing;
+            //}
+
+			/// <exception cref="NSch.KeyPair.ASN1Exception"/>
+			internal ASN1(KeyPair _enclosing, byte[] buf, int start, int length)
+			{
+				this._enclosing = _enclosing;
+				this.buf = buf;
+				this.start = start;
+				this.length = length;
+				if (start + length > buf.Length)
+				{
+                    //throw new NSch.KeyPair.ASN1Exception(this);
+				}
+			}
+
+			internal virtual int getType()
+			{
+				return this.buf[this.start] & unchecked((int)(0xff));
+			}
+
+			internal virtual bool isSEQUENCE()
+			{
+				return this.getType() == (unchecked((int)(0x30)) & unchecked((int)(0xff)));
+			}
+
+			internal virtual bool isINTEGER()
+			{
+				return this.getType() == (unchecked((int)(0x02)) & unchecked((int)(0xff)));
+			}
+
+			internal virtual bool isOBJECT()
+			{
+				return this.getType() == (unchecked((int)(0x06)) & unchecked((int)(0xff)));
+			}
+
+			internal virtual bool isOCTETSTRING()
+			{
+				return this.getType() == (unchecked((int)(0x04)) & unchecked((int)(0xff)));
+			}
+
+			private int getLength(int[] indexp)
+			{
+				int index = indexp[0];
+				int length = this.buf[index++] & unchecked((int)(0xff));
+				if ((length & unchecked((int)(0x80))) != 0)
+				{
+					int foo = length & unchecked((int)(0x7f));
+					length = 0;
+					while (foo-- > 0)
+					{
+						length = (length << 8) + (this.buf[index++] & unchecked((int)(0xff)));
+					}
+				}
+				indexp[0] = index;
+				return length;
+			}
+
+			internal virtual byte[] getContent()
+			{
+				int[] indexp = new int[1];
+				indexp[0] = this.start + 1;
+				int length = this.getLength(indexp);
+				int index = indexp[0];
+				byte[] tmp = new byte[length];
+				System.Array.Copy(this.buf, index, tmp, 0, tmp.Length);
+				return tmp;
+			}
+
+			/// <exception cref="NSch.KeyPair.ASN1Exception"/>
+			internal virtual NSch.KeyPair.ASN1[] getContents()
+			{
+				int typ = this.buf[this.start];
+				int[] indexp = new int[1];
+				indexp[0] = this.start + 1;
+				int length = this.getLength(indexp);
+				if (typ == unchecked((int)(0x05)))
+				{
+					return new NSch.KeyPair.ASN1[0];
+				}
+				int index = indexp[0];
+				ArrayList values = new ArrayList();
+				while (length > 0)
+				{
+					index++;
+					length--;
+					int tmp = index;
+					indexp[0] = index;
+					int l = this.getLength(indexp);
+					index = indexp[0];
+					length -= (index - tmp);
+					values.Add(new NSch.KeyPair.ASN1(this._enclosing, this.buf, tmp - 1, 1 + (index -
+						 tmp) + l));
+					index += l;
+					length -= l;
+				}
+				NSch.KeyPair.ASN1[] result = new NSch.KeyPair.ASN1[values.Count];
+				for (int i = 0; i < values.Count; i++)
+				{
+					result[i] = (NSch.KeyPair.ASN1)values[i];
+				}
+				return result;
+			}
+
+			private readonly KeyPair _enclosing;
 		}
 	}
 }
