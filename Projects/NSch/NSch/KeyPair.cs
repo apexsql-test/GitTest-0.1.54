@@ -633,9 +633,9 @@ namespace NSch
 			this.passphrase = passphrase;
 		}
 
-		private bool encrypted = false;
+		protected bool encrypted = false;
 
-		private byte[] data = null;
+        protected byte[] data = null;
 
 		private byte[] iv = null;
 
@@ -781,11 +781,11 @@ namespace NSch
 				byte[] buf = prvkey;
 				if (buf != null)
 				{
-                    //NSch.KeyPair ppk = LoadPPK(jsch, buf);
-                    //if (ppk != null)
-                    //{
-                    //    return ppk;
-                    //}
+					NSch.KeyPair ppk = LoadPPK(jsch, buf);
+					if (ppk != null)
+					{
+						return ppk;
+					}
 				}
 				int len = (buf != null ? buf.Length : 0);
 				int i = 0;
@@ -1372,7 +1372,7 @@ namespace NSch
 		private static readonly string[] header3 = new string[] { "Private-MAC: " };
 
 		/// <exception cref="NSch.JSchException"/>
-		internal static NSch.KeyPair loadPPK(JSch jsch, byte[] buf)
+		internal static NSch.KeyPair LoadPPK(JSch jsch, byte[] buf)
 		{
 			byte[] pubkey = null;
 			byte[] prvkey = null;

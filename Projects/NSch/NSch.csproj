@@ -74,6 +74,7 @@
     <Compile Include="NSch\KeyPairGenDSA.cs" />
     <Compile Include="NSch\KeyPairGenECDSA.cs" />
     <Compile Include="NSch\KeyPairGenRSA.cs" />
+    <None Include="NSch\KeyPairPKCS8.cs" />
     <Compile Include="NSch\KeyPairRSA.cs" />
     <Compile Include="NSch\KnownHosts.cs" />
     <Compile Include="NSch\Logger.cs" />
