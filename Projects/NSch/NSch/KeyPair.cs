@@ -97,6 +97,13 @@ namespace NSch
 
 		internal abstract int GetKeySize();
 
+		public abstract byte[] GetSignature(byte[] data);
+
+		public abstract SignatureBase GetVerifier();
+
+		/// <exception cref="NSch.JSchException"/>
+		public abstract byte[] ForSSHAgent();
+
 		public virtual string GetPublicKeyComment()
 		{
 			return PublicKeyComment;

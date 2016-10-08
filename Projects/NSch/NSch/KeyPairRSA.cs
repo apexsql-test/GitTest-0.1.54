@@ -40,6 +40,10 @@ namespace NSch
     {
         private byte[] n_array;
 
+        private byte[] e_array;
+
+        private byte[] d_array;
+
         private byte[] pub_array;
 
         private byte[] prv_array;
@@ -416,7 +420,6 @@ namespace NSch
             return key_size;
         }
 
-/*
         public override byte[] GetSignature(byte[] data)
         {
             try
@@ -424,7 +427,8 @@ namespace NSch
                 Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("signature.rsa"));
                 NSch.SignatureRSA rsa = (NSch.SignatureRSA)(System.Activator.CreateInstance(c));
                 rsa.Init();
-                rsa.SetPrvKey(prv_array, n_array);
+                //rsa.SetPrvKey(prv_array, n_array);
+                rsa.SetPrvKey(d_array, n_array, e_array);
                 rsa.Update(data);
                 byte[] sig = rsa.Sign();
                 byte[][] tmp = new byte[2][];
@@ -438,7 +442,7 @@ namespace NSch
             return null;
         }
 
-        public override Signature GetVerifier()
+        public override SignatureBase GetVerifier()
         {
             try
             {
@@ -452,7 +456,7 @@ namespace NSch
                     pub_array = buf.GetString();
                     n_array = buf.GetString();
                 }
-                rsa.GetPubKey(pub_array, n_array);
+                rsa.SetPubKey(pub_array, n_array);
                 return rsa;
             }
             catch (Exception)
@@ -460,7 +464,7 @@ namespace NSch
             }
             return null;
         }
-*/
+
         /// <exception cref="NSch.JSchException"/>
         internal static NSch.KeyPair FromSSHAgent(JSch jsch, Buffer buf)
         {
@@ -477,11 +481,11 @@ namespace NSch
             kpair.vendor = VENDOR_OPENSSH;
             return kpair;
         }
-/*
+
         /// <exception cref="NSch.JSchException"/>
         public override byte[] ForSSHAgent()
         {
-            if (isEncrypted())
+            if (IsEncrypted())
             {
                 throw new JSchException("key is encrypted.");
             }
@@ -498,7 +502,7 @@ namespace NSch
             buf.GetByte(result, 0, result.Length);
             return result;
         }
-*/
+
         private byte[] getEPArray()
         {
             if (ep_array == null)

@@ -336,9 +336,9 @@ namespace NSch
 		{
 			return key_size;
 		}
-/*
-		public override byte[] GetSignature(byte[] data)
-		{
+
+        public override byte[] GetSignature(byte[] data)
+        {
 			try
 			{
 				Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("signature.ecdsa"));
@@ -346,7 +346,7 @@ namespace NSch
 				ecdsa.Init();
 				ecdsa.SetPrvKey(prv_array);
 				ecdsa.Update(data);
-				byte[] sig = ecdsa.sign();
+				byte[] sig = ecdsa.Sign();
 				byte[][] tmp = new byte[2][];
 				tmp[0] = Util.Str2byte("ecdsa-sha2-" + Sharpen.Runtime.GetStringForBytes(name));
 				tmp[1] = sig;
@@ -359,7 +359,7 @@ namespace NSch
 			return null;
 		}
 
-		public override Signature GetVerifier()
+        public override SignatureBase GetVerifier()
 		{
 			try
 			{
@@ -373,7 +373,7 @@ namespace NSch
 					// ecdsa-sha2-nistp256
 					buf.GetString();
 					// nistp256
-					byte[][] tmp = fromPoint(buf.getString());
+					byte[][] tmp = fromPoint(buf.GetString());
 					r_array = tmp[0];
 					s_array = tmp[1];
 				}
@@ -386,7 +386,7 @@ namespace NSch
 			//System.err.println("e "+e);
 			return null;
 		}
-*/
+
 		/// <exception cref="NSch.JSchException"/>
 		internal static NSch.KeyPair FromSSHAgent(JSch jsch, Buffer buf)
 		{
@@ -404,7 +404,6 @@ namespace NSch
 			return kpair;
 		}
 
-/*
 		/// <exception cref="NSch.JSchException"/>
 		public override byte[] ForSSHAgent()
 		{
@@ -423,8 +422,7 @@ namespace NSch
 			buf.GetByte(result, 0, result.Length);
 			return result;
 		}
- */ 
-
+ 
 		internal static byte[] toPoint(byte[] r_array, byte[] s_array)
 		{
 			byte[] tmp = new byte[1 + r_array.Length + s_array.Length];
