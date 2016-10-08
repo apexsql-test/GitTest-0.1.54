@@ -359,7 +359,7 @@ namespace NSch
 			return null;
 		}
 
-        public override SignatureBase GetVerifier()
+		public override SignatureBase GetVerifier()
 		{
 			try
 			{
@@ -422,7 +422,7 @@ namespace NSch
 			buf.GetByte(result, 0, result.Length);
 			return result;
 		}
- 
+
 		internal static byte[] toPoint(byte[] r_array, byte[] s_array)
 		{
 			byte[] tmp = new byte[1 + r_array.Length + s_array.Length];
