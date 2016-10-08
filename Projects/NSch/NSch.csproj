@@ -70,7 +70,9 @@
     <Compile Include="NSch\KeyExchange.cs" />
     <Compile Include="NSch\KeyPair.cs" />
     <Compile Include="NSch\KeyPairDSA.cs" />
+    <Compile Include="NSch\KeyPairECDSA.cs" />
     <Compile Include="NSch\KeyPairGenDSA.cs" />
+    <Compile Include="NSch\KeyPairGenECDSA.cs" />
     <Compile Include="NSch\KeyPairGenRSA.cs" />
     <Compile Include="NSch\KeyPairRSA.cs" />
     <Compile Include="NSch\KnownHosts.cs" />

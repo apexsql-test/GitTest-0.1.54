@@ -99,10 +99,10 @@ namespace NSch
 
 		public virtual string GetPublicKeyComment()
 		{
-			return publicKeyComment;
+			return PublicKeyComment;
 		}
 
-		private string publicKeyComment = string.Empty;
+		protected string PublicKeyComment = string.Empty;
 
 		internal JSch jsch = null;
 
@@ -660,7 +660,7 @@ namespace NSch
 			byte[] publickeyblob = null;
 			int type = ERROR;
 			int vendor = VENDOR_OPENSSH;
-			string publicKeyComment = string.Empty;
+			string PublicKeyComment = string.Empty;
 			NSch.Cipher cipher = null;
 			try
 			{
@@ -1026,7 +1026,7 @@ namespace NSch
 									}
 									if (i_1 < len)
 									{
-										publicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, s, i_1 - s);
+										PublicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, s, i_1 - s);
 									}
 								}
 							}
@@ -1066,7 +1066,7 @@ namespace NSch
 				kpair.encrypted = encrypted;
 				kpair.publickeyblob = publickeyblob;
 				kpair.vendor = vendor;
-				kpair.publicKeyComment = publicKeyComment;
+				kpair.PublicKeyComment = PublicKeyComment;
 				kpair.cipher = cipher;
 				if (encrypted)
 				{
@@ -1098,7 +1098,7 @@ namespace NSch
 			byte[] publickeyblob = null;
 			int type = ERROR;
 			int vendor = VENDOR_OPENSSH;
-			string publicKeyComment = string.Empty;
+			string PublicKeyComment = string.Empty;
 			NSch.Cipher cipher = null;
 			// prvkey from "ssh-add" command on the remote.
 			if (pubkey == null && prvkey != null && (prvkey.Length > 11 && prvkey[0] == 0 && 
@@ -1123,12 +1123,12 @@ namespace NSch
                     //}
                     //else
 					{
-                        //if (_type.Equals("ecdsa-sha2-nistp256") || _type.Equals("ecdsa-sha2-nistp384") ||
-                        //     _type.Equals("ecdsa-sha2-nistp512"))
-                        //{
-                        //    kpair = KeyPairECDSA.fromSSHAgent(jsch, buf);
-                        //}
-                        //else
+                        if (_type.Equals("ecdsa-sha2-nistp256") || _type.Equals("ecdsa-sha2-nistp384") ||
+                             _type.Equals("ecdsa-sha2-nistp512"))
+                        {
+                            kpair = KeyPairECDSA.FromSSHAgent(jsch, buf);
+                        }
+                        else
 						{
 							throw new JSchException("privatekey: invalid key " + Sharpen.Runtime.GetStringForBytes
 								(prvkey, 4, 7));
@@ -1566,7 +1566,7 @@ namespace NSch
 									}
 									if (start < i)
 									{
-										publicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
+										PublicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
 									}
 								}
 							}
@@ -1618,7 +1618,7 @@ namespace NSch
 										}
 										if (start < i)
 										{
-											publicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
+											PublicKeyComment = Sharpen.Runtime.GetStringForBytes(buf, start, i - start);
 										}
 									}
 								}
@@ -1655,10 +1655,10 @@ namespace NSch
 				}
 				else
 				{
-                    //if (type == ECDSA)
-                    //{
-                    //    kpair_1 = new KeyPairECDSA(jsch);
-                    //}
+                    if (type == ECDSA)
+                    {
+                        kpair_1 = new KeyPairECDSA(jsch);
+                    }
                     //else
                     //{
                     //    if (vendor == VENDOR_PKCS8)
@@ -1673,7 +1673,7 @@ namespace NSch
 				kpair_1.encrypted = encrypted;
 				kpair_1.publickeyblob = publickeyblob;
 				kpair_1.vendor = vendor;
-				kpair_1.publicKeyComment = publicKeyComment;
+				kpair_1.PublicKeyComment = PublicKeyComment;
 				kpair_1.cipher = cipher;
 				if (encrypted)
 				{
@@ -1816,7 +1816,7 @@ namespace NSch
 			}
 			kpair.encrypted = !v["Encryption"].Equals("none");
 			kpair.vendor = VENDOR_PUTTY;
-			kpair.publicKeyComment = (string)v["Comment"];
+			kpair.PublicKeyComment = (string)v["Comment"];
 			if (kpair.encrypted)
 			{
                 //if (Session.CheckCipher((string)JSch.GetConfig("aes256-cbc")))
@@ -1947,7 +1947,7 @@ namespace NSch
 		{
 			this.publickeyblob = kpair.publickeyblob;
 			this.vendor = kpair.vendor;
-			this.publicKeyComment = kpair.publicKeyComment;
+			this.PublicKeyComment = kpair.PublicKeyComment;
 			this.cipher = kpair.cipher;
 		}
 
