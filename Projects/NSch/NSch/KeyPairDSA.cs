@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@ All credit should go to the authors of jsch.
 using System;
 using NSch;
 using Sharpen;
+using Mono.Math;
 
 namespace NSch
 {
@@ -53,8 +54,23 @@ namespace NSch
 		{
 		}
 
-		//private int key_size=0;
-		/// <exception cref="NSch.JSchException"></exception>
+		public KeyPairDSA(JSch jsch, byte[] P_array, byte[] Q_array, byte[] G_array, byte
+			[] pub_array, byte[] prv_array)
+			: base(jsch)
+		{
+			//private int key_size=0;
+			this.P_array = P_array;
+			this.Q_array = Q_array;
+			this.G_array = G_array;
+			this.pub_array = pub_array;
+			this.prv_array = prv_array;
+			if (P_array != null)
+			{
+				key_size = (new BigInteger(P_array)).BitCount();
+			}
+		}
+
+		/// <exception cref="NSch.JSchException"/>
 		internal override void Generate(int key_size)
 		{
 			this.key_size = key_size;
@@ -141,9 +157,31 @@ namespace NSch
 						Q_array = buf.GetMPIntBits();
 						pub_array = buf.GetMPIntBits();
 						prv_array = buf.GetMPIntBits();
+						if (P_array != null)
+						{
+							key_size = (new BigInteger(P_array)).BitCount();
+						}
 						return true;
 					}
 					return false;
+				}
+				else
+				{
+					if (vendor == VENDOR_PUTTY)
+					{
+						Buffer buf = new Buffer(plain);
+						buf.Skip(plain.Length);
+						try
+						{
+							byte[][] tmp = buf.getBytes(1, string.Empty);
+							prv_array = tmp[0];
+						}
+						catch (JSchException)
+						{
+							return false;
+						}
+						return true;
+					}
 				}
 				int index = 0;
 				int length = 0;
@@ -250,6 +288,10 @@ namespace NSch
 				prv_array = new byte[length];
 				System.Array.Copy(plain, index, prv_array, 0, length);
 				index += length;
+				if (P_array != null)
+				{
+					key_size = (new BigInteger(P_array)).BitCount();
+				}
 			}
 			catch (Exception)
 			{
@@ -271,14 +313,13 @@ namespace NSch
 			{
 				return null;
 			}
-			Buffer buf = new Buffer(sshdss.Length + 4 + P_array.Length + 4 + Q_array.Length +
-				 4 + G_array.Length + 4 + pub_array.Length + 4);
-			buf.PutString(sshdss);
-			buf.PutString(P_array);
-			buf.PutString(Q_array);
-			buf.PutString(G_array);
-			buf.PutString(pub_array);
-			return buf.buffer;
+			byte[][] tmp = new byte[5][];
+			tmp[0] = sshdss;
+			tmp[1] = P_array;
+			tmp[2] = Q_array;
+			tmp[3] = G_array;
+			tmp[4] = pub_array;
+			return Buffer.fromBytes(tmp).buffer;
 		}
 
 		private static readonly byte[] sshdss = Util.Str2byte("ssh-dss");
@@ -297,7 +338,91 @@ namespace NSch
 		{
 			return key_size;
 		}
+/*
+		public override byte[] GetSignature(byte[] data)
+		{
+			try
+			{
+				Type c = Sharpen.Runtime.GetType((string)JSch.getConfig("signature.dss"));
+				NSch.SignatureDSA dsa = (NSch.SignatureDSA)(System.Activator.CreateInstance(c));
+				dsa.init();
+				dsa.setPrvKey(prv_array, P_array, Q_array, G_array);
+				dsa.update(data);
+				byte[] sig = dsa.sign();
+				byte[][] tmp = new byte[2][];
+				tmp[0] = sshdss;
+				tmp[1] = sig;
+				return Buffer.fromBytes(tmp).buffer;
+			}
+			catch (Exception)
+			{
+			}
+			//System.err.println("e "+e);
+			return null;
+		}
 
+		public override Signature GetVerifier()
+		{
+			try
+			{
+				Type c = Sharpen.Runtime.GetType((string)JSch.getConfig("signature.dss"));
+				NSch.SignatureDSA dsa = (NSch.SignatureDSA)(System.Activator.CreateInstance(c));
+				dsa.init();
+				if (pub_array == null && P_array == null && getPublicKeyBlob() != null)
+				{
+					Buffer buf = new Buffer(getPublicKeyBlob());
+					buf.getString();
+					P_array = buf.getString();
+					Q_array = buf.getString();
+					G_array = buf.getString();
+					pub_array = buf.getString();
+				}
+				dsa.setPubKey(pub_array, P_array, Q_array, G_array);
+				return dsa;
+			}
+			catch (Exception)
+			{
+			}
+			//System.err.println("e "+e);
+			return null;
+		}
+*/
+		/// <exception cref="NSch.JSchException"/>
+		internal static NSch.KeyPair FromSSHAgent(JSch jsch, Buffer buf)
+		{
+			byte[][] tmp = buf.getBytes(7, "invalid key format");
+			byte[] P_array = tmp[1];
+			byte[] Q_array = tmp[2];
+			byte[] G_array = tmp[3];
+			byte[] pub_array = tmp[4];
+			byte[] prv_array = tmp[5];
+			NSch.KeyPairDSA kpair = new NSch.KeyPairDSA(jsch, P_array, Q_array, G_array, pub_array
+				, prv_array);
+			kpair.PublicKeyComment = Sharpen.Runtime.GetStringForBytes(tmp[6]);
+			kpair.vendor = VENDOR_OPENSSH;
+			return kpair;
+		}
+/*
+		/// <exception cref="NSch.JSchException"/>
+		public override byte[] ForSSHAgent()
+		{
+			if (isEncrypted())
+			{
+				throw new JSchException("key is encrypted.");
+			}
+			Buffer buf = new Buffer();
+			buf.putString(sshdss);
+			buf.putString(P_array);
+			buf.putString(Q_array);
+			buf.putString(G_array);
+			buf.putString(pub_array);
+			buf.putString(prv_array);
+			buf.putString(Util.Str2byte(PublicKeyComment));
+			byte[] result = new byte[buf.getLength()];
+			buf.getByte(result, 0, result.Length);
+			return result;
+		}
+*/
 		public override void Dispose()
 		{
 			base.Dispose();

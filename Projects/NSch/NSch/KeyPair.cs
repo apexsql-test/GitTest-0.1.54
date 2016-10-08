@@ -1111,17 +1111,17 @@ namespace NSch
 				// ssh-rsa or ssh-dss
 				buf.Rewind();
 				NSch.KeyPair kpair = null;
-                //if (_type.Equals("ssh-rsa"))
-                //{
-                //    kpair = KeyPairRSA.FromSSHAgent(jsch, buf);
-                //}
-                //else
+                if (_type.Equals("ssh-rsa"))
+                {
+                    kpair = KeyPairRSA.FromSSHAgent(jsch, buf);
+                }
+                else
 				{
-                    //if (_type.Equals("ssh-dss"))
-                    //{
-                    //    kpair = KeyPairDSA.FromSSHAgent(jsch, buf);
-                    //}
-                    //else
+                    if (_type.Equals("ssh-dss"))
+                    {
+                        kpair = KeyPairDSA.FromSSHAgent(jsch, buf);
+                    }
+                    else
 					{
                         if (_type.Equals("ecdsa-sha2-nistp256") || _type.Equals("ecdsa-sha2-nistp384") ||
                              _type.Equals("ecdsa-sha2-nistp512"))
@@ -1784,7 +1784,7 @@ namespace NSch
 				_buf.GetByte(pub_array);
 				byte[] n_array = new byte[_buf.GetInt()];
 				_buf.GetByte(n_array);
-                //kpair = new KeyPairRSA(jsch, n_array, pub_array, null);
+                kpair = new KeyPairRSA(jsch, n_array, pub_array, null);
 			}
 			else
 			{
@@ -1803,7 +1803,7 @@ namespace NSch
 					_buf.GetByte(g_array);
 					byte[] y_array = new byte[_buf.GetInt()];
 					_buf.GetByte(y_array);
-                    //kpair = new KeyPairDSA(jsch, p_array, q_array, g_array, y_array, null);
+                    kpair = new KeyPairDSA(jsch, p_array, q_array, g_array, y_array, null);
 				}
 				else
 				{
