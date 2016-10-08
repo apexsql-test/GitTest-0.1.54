@@ -115,8 +115,8 @@ namespace GitSSHConnectionTest
         {
             string OutputDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\sample_db01";
             string OutputDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\sample_db02";
-            m_url = "git@github.com:apexsql-test/test02.git";
-            //m_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
+            //m_url = "git@github.com:apexsql-test/test02.git";
+            m_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
             string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
             string passPhase = "";
             string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
