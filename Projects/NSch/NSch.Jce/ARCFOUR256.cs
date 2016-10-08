@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2008-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@ namespace NSch.Jce
 			return bsize;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override void Init(int mode, byte[] key, byte[] iv)
 		{
 			byte[] tmp;
@@ -69,8 +69,11 @@ namespace NSch.Jce
 			{
 				cipher = Sharpen.Cipher.GetInstance("RC4");
 				SecretKeySpec _key = new SecretKeySpec(key, "RC4");
-				cipher.Init((mode == ENCRYPT_MODE ? Sharpen.Cipher.ENCRYPT_MODE : Sharpen.Cipher.
-					DECRYPT_MODE), _key);
+				lock (typeof(Sharpen.Cipher))
+				{
+					cipher.Init((mode == NSch.Cipher.ENCRYPT_MODE ? Sharpen.Cipher.ENCRYPT_MODE : 
+						Sharpen.Cipher.DECRYPT_MODE), _key);
+				}
 				byte[] foo = new byte[1];
 				for (int i = 0; i < skip; i++)
 				{
@@ -84,7 +87,7 @@ namespace NSch.Jce
 			}
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public override void Update(byte[] foo, int s1, int len, byte[] bar, int s2)
 		{
 			cipher.Update(foo, s1, len, bar, s2);
