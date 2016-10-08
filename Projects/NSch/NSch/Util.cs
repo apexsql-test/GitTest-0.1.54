@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@ All credit should go to the authors of jsch.
 using System;
 using System.Collections;
 using System.Net.Sockets;
+using System.Security;
 using System.Text;
 using NSch;
 using Sharpen;
@@ -59,14 +60,17 @@ namespace NSch
 			return 0;
 		}
 
+		/// <exception cref="NSch.JSchException"/>
 		internal static byte[] FromBase64(byte[] buf, int start, int length)
 		{
+			try
+			{
 			byte[] foo = new byte[length];
 			int j = 0;
 			for (int i = start; i < start + length; i += 4)
 			{
-				foo[j] = unchecked((byte)((Val(buf[i]) << 2) | ((int)(((uint)(Val(buf[i + 1]) & unchecked(
-					(int)(0x30)))) >> 4))));
+				foo[j] = unchecked((byte)((Val(buf[i]) << 2) | ((int)(((uint)(Val(buf[i + 1]) & 
+					unchecked((int)(0x30)))) >> 4))));
 				if (buf[i + 2] == unchecked((byte)'='))
 				{
 					j++;
@@ -86,6 +90,11 @@ namespace NSch
 			byte[] bar = new byte[j];
 			System.Array.Copy(foo, 0, bar, 0, j);
 			return bar;
+		}
+			catch (IndexOutOfRangeException e)
+			{
+				throw new JSchException("fromBase64: invalid base64 data", e);
+			}
 		}
 
 		internal static byte[] ToBase64(byte[] buf, int start, int length)
@@ -450,7 +459,7 @@ namespace NSch
 			return true;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		internal static Socket CreateSocket(string host, int port, int timeout)
 		{
 			Socket socket = null;
@@ -476,7 +485,7 @@ namespace NSch
 			Socket[] sockp = new Socket[1];
 			Exception[] ee = new Exception[1];
 			string message_1 = string.Empty;
-			Sharpen.Thread tmp = new Sharpen.Thread(new _Runnable_350(sockp, _host, _port, ee
+			Sharpen.Thread tmp = new Sharpen.Thread(new _Runnable_358(sockp, _host, _port, ee
 				));
 			tmp.SetName("Opening Socket " + host);
 			tmp.Start();
@@ -506,9 +515,9 @@ namespace NSch
 			return socket;
 		}
 
-		private sealed class _Runnable_350 : Runnable
+		private sealed class _Runnable_358 : Runnable
 		{
-			public _Runnable_350(Socket[] sockp, string _host, int _port, Exception[] ee)
+			public _Runnable_358(Socket[] sockp, string _host, int _port, Exception[] ee)
 			{
 				this.sockp = sockp;
 				this._host = _host;
@@ -597,6 +606,21 @@ namespace NSch
 			return Byte2str(str, s, l, "UTF-8");
 		}
 
+		internal static string toHex(byte[] str)
+		{
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < str.Length; i++)
+			{
+				string foo = Sharpen.Extensions.ToHexString(str[i] & unchecked((int)(0xff)));
+				sb.Append("0x" + (foo.Length == 1 ? "0" : string.Empty) + foo);
+				if (i + 1 < str.Length)
+				{
+					sb.Append(":");
+				}
+			}
+			return sb.ToString();
+		}
+
 		internal static readonly byte[] empty = Str2byte(string.Empty);
 
 		internal static void Bzero(byte[] foo)
@@ -638,23 +662,67 @@ loop_break: ;
 			return result;
 		}
 
+		internal static string CheckTilde(string str)
+		{
+			try
+			{
+				if (str.StartsWith("~"))
+				{
+					str = str.Replace("~", Runtime.GetProperty("user.home"));
+				}
+			}
+			catch (SecurityException)
+			{
+			}
+			return str;
+		}
+
 		private static int SkipUTF8Char(byte b)
 		{
 			if (unchecked((byte)(b & unchecked((int)(0x80)))) == 0)
 			{
 				return 1;
 			}
-			if (unchecked((byte)(b & unchecked((int)(0xe0)))) == unchecked((byte)unchecked((int
-				)(0xc0))))
+			if (unchecked((byte)(b & unchecked((int)(0xe0)))) == unchecked((byte)unchecked((int)(0xc0))))
 			{
 				return 2;
 			}
-			if (unchecked((byte)(b & unchecked((int)(0xf0)))) == unchecked((byte)unchecked((int
-				)(0xe0))))
+			if (unchecked((byte)(b & unchecked((int)(0xf0)))) == unchecked((byte)unchecked((int)(0xe0))))
 			{
 				return 3;
 			}
 			return 1;
+		}
+
+		/// <exception cref="System.IO.IOException"/>
+		internal static byte[] FromFile(string _file)
+		{
+			_file = CheckTilde(_file);
+			FilePath file = new FilePath(_file);
+			FileInputStream fis = new FileInputStream(_file);
+			try
+			{
+				byte[] result = new byte[(int)(file.Length())];
+				int len = 0;
+				while (true)
+				{
+					int i = fis.Read(result, len, result.Length - len);
+					if (i <= 0)
+					{
+						break;
+					}
+					len += i;
+				}
+				fis.Close();
+				return result;
+			}
+			finally
+			{
+				if (fis != null)
+				{
+					fis.Close();
+				}
+			}
 		}
 	}
 }
