@@ -635,7 +635,7 @@ namespace NSch
 
 		protected bool encrypted = false;
 
-        protected byte[] data = null;
+		protected byte[] data = null;
 
 		private byte[] iv = null;
 
@@ -1294,17 +1294,17 @@ namespace NSch
 				}
 				else
 				{
-                    if (type == ECDSA)
-                    {
-                        kpair_1 = new KeyPairECDSA(jsch);
-                    }
-                    //else
-                    //{
-                    //    if (vendor == VENDOR_PKCS8)
-                    //    {
-                    //        kpair_1 = new KeyPairPKCS8(jsch);
-                    //    }
-                    //}
+					if (type == ECDSA)
+					{
+						kpair_1 = new KeyPairECDSA(jsch);
+					}
+					else
+					{
+						if (vendor == VENDOR_PKCS8)
+						{
+							//kpair_1 = new KeyPairPKCS8(jsch);
+						}
+					}
 				}
 			}
 			if (kpair_1 != null)
@@ -1423,7 +1423,7 @@ namespace NSch
 				_buf.GetByte(pub_array);
 				byte[] n_array = new byte[_buf.GetInt()];
 				_buf.GetByte(n_array);
-                kpair = new KeyPairRSA(jsch, n_array, pub_array, null);
+				kpair = new KeyPairRSA(jsch, n_array, pub_array, null);
 			}
 			else
 			{
@@ -1442,7 +1442,7 @@ namespace NSch
 					_buf.GetByte(g_array);
 					byte[] y_array = new byte[_buf.GetInt()];
 					_buf.GetByte(y_array);
-                    kpair = new KeyPairDSA(jsch, p_array, q_array, g_array, y_array, null);
+					kpair = new KeyPairDSA(jsch, p_array, q_array, g_array, y_array, null);
 				}
 				else
 				{
@@ -1458,21 +1458,21 @@ namespace NSch
 			kpair.PublicKeyComment = (string)v["Comment"];
 			if (kpair.encrypted)
 			{
-                //if (Session.CheckCipher((string)JSch.GetConfig("aes256-cbc")))
-                //{
-                //    try
-                //    {
-                //        Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes256-cbc"));
-                //        kpair.cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
-                //        kpair.iv = new byte[kpair.cipher.GetIVSize()];
-                //    }
-                //    catch (Exception)
-                //    {
-                //        throw new JSchException("The cipher 'aes256-cbc' is required, but it is not available."
-                //            );
-                //    }
-                //}
-                //else
+				if (Session.CheckCipher((string)JSch.GetConfig("aes256-cbc")))
+				{
+					try
+					{
+						Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig("aes256-cbc"));
+						kpair.cipher = (NSch.Cipher)(System.Activator.CreateInstance(c));
+						kpair.iv = new byte[kpair.cipher.GetIVSize()];
+					}
+					catch (Exception)
+					{
+						throw new JSchException("The cipher 'aes256-cbc' is required, but it is not available."
+							);
+					}
+				}
+				else
 				{
 					throw new JSchException("The cipher 'aes256-cbc' is required, but it is not available."
 						);
@@ -1610,11 +1610,11 @@ namespace NSch
 			internal int length;
 
 			/// <exception cref="NSch.KeyPair.ASN1Exception"/>
-            //internal ASN1(KeyPair _enclosing, byte[] buf)
-            //    : this(buf, 0, buf.Length)
-            //{
-            //    this._enclosing = _enclosing;
-            //}
+			internal ASN1(KeyPair _enclosing, byte[] buf)
+				: this(_enclosing, buf, 0, 0)
+			{
+				this._enclosing = _enclosing;
+			}
 
 			/// <exception cref="NSch.KeyPair.ASN1Exception"/>
 			internal ASN1(KeyPair _enclosing, byte[] buf, int start, int length)
@@ -1625,7 +1625,7 @@ namespace NSch
 				this.length = length;
 				if (start + length > buf.Length)
 				{
-                    //throw new NSch.KeyPair.ASN1Exception(this);
+					//throw new NSch.KeyPair.ASN1Exception(this);
 				}
 			}
 

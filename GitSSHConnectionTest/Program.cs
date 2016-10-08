@@ -23,7 +23,6 @@ namespace GitSSHConnectionTest
     class Program
     {
         private static GitClient m_client;
-        private static string m_url = string.Empty;
 
         private static void ClearDirectory(string targetDirectory)
         {
@@ -53,29 +52,17 @@ namespace GitSSHConnectionTest
             }
         }
 
-        private static void TryToClone(string localPath)
+        private static void TryToClone(string localPath, string url)
         {
             try
             {
                 m_client =
                     GitClient.CloneRepository()
                         //.SetTimeout(30)
-                        .SetURI(m_url)
+                        .SetURI(url)
                         .SetDirectory(localPath)
                         .SetBranchesToClone(new List<string>() { "master" })
                         .Call();
-
-                //if (!Activebranch.Equals(NGit.Constants.MASTER))
-                //{
-                //    m_client.BranchCreate()
-                //        .SetName(Activebranch)
-                //        .SetStartPoint(OriginActivebranch)
-                //        .SetUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-                //        .Call();
-                //    m_client.Checkout().SetName(Activebranch).Call();
-                //}
-
-                //SetAutoclrf(false);
             }
             catch (NullReferenceException nullReferenceException)
             {
@@ -86,17 +73,6 @@ namespace GitSSHConnectionTest
             }
             catch (JGitInternalException jGitInternalException)
             {
-                //if (
-                //    jGitInternalException.Message.Equals(
-                //        string.Format(
-                //            Resources.NOT_EMPTY_DIR,
-                //            new DirectoryInfo(m_localPath).Name)))
-                //{
-                //    IOHelper.CleanDirectory(localPath, true);
-                //    TryToClone(localPath);
-                //    return;
-                //}
-
                 ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
                 DeleteEmptyRepository(localPath);
                 //throw new AuthenticationException(Resources.AUTH_ACCESS_DENIED);
@@ -111,12 +87,20 @@ namespace GitSSHConnectionTest
             }
         }
 
+        static void runTest(string dir, string url)
+        {
+            ClearDirectory(dir);
+            DeleteEmptyRepository(dir);
+            TryToClone(dir, url);
+        }
+
         static void Main(string[] args)
         {
-            string OutputDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\sample_db01";
-            string OutputDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\sample_db02";
-            //m_url = "git@github.com:apexsql-test/test02.git";
-            m_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
+            string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db01";
+            string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
+            string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
+            string m_url_github = "git@github.com:apexsql-test/test02.git";
+            string m_url_bitbucket = "git@bitbucket.org:apexsql_test/sql_test_04.git";
             string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
             string passPhase = "";
             string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
@@ -129,7 +113,6 @@ namespace GitSSHConnectionTest
 
             JSch.SetLogger(new JSchLogger());
 
-
             var sshSessionFactory = new GitSessionFactorySSHCredentials();
             sshSessionFactory.Passphase = passPhase;
             sshSessionFactory.KeyPairPath = keyPairPath;
@@ -138,45 +121,10 @@ namespace GitSSHConnectionTest
 
             try
             {
-                ClearDirectory(OutputDir01);
-                DeleteEmptyRepository(OutputDir01);
-                ClearDirectory(OutputDir02);
-                DeleteEmptyRepository(OutputDir02);
-
-                //m_client = Git.CloneRepository()
-                //          .SetDirectory(OutputDir01)
-                //          .SetURI(m_url)
-                //          .SetBranchesToClone(new List<string>() { "master" })
-                //          .Call();
-
-                //m_client = GitClient.CloneRepository()
-                //            //.SetTimeout(300)
-                //            .SetURI(m_url)
-                //            .SetDirectory(OutputDir01)
-                //            .SetBranchesToClone(new List<string>() { "master" })
-                //            .Call();
-
-                //m_client = Git.CloneRepository()
-                //          .SetDirectory(OutputDir02)
-                //          .SetURI(m_url)
-                //          .SetBranchesToClone(new List<string>() { "master" })
-                //          .Call();
-
-                //m_client = GitClient.CloneRepository()
-                //            //.SetTimeout(300)
-                //            .SetURI(m_url)
-                //            .SetDirectory(OutputDir02)
-                //            .SetBranchesToClone(new List<string>() { "master" })
-                //            .Call();
-
-
-                TryToClone(OutputDir01);
-                TryToClone(OutputDir02);
+                runTest(GitHubDir01, m_url_github);
+                runTest(GitHubDir02, m_url_github);
+                runTest(BitBucketDir01, m_url_bitbucket);
             }
-            //catch (NGit.Errors.TransportException jGitTransportException)
-            //{
-            //    System.Windows.Forms.MessageBox.Show(jGitTransportException.Message);
-            //}
             catch (JGitInternalException jGitInternalException)
             {
                 //Logger.Exception(jGitInternalException);
