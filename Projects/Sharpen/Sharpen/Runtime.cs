@@ -89,10 +89,10 @@ namespace Sharpen
 			if (properties == null) {
 				properties = new Hashtable ();
 				properties ["jgit.fs.debug"] = "false";
-				var home = Environment.GetFolderPath (Environment.SpecialFolder.UserProfile).Trim ();
-				if (string.IsNullOrEmpty (home))
-					home = Environment.GetFolderPath (Environment.SpecialFolder.Personal).Trim ();
-				properties ["user.home"] = home;
+                //var home = Environment.GetFolderPath (Environment.SpecialFolder.UserProfile).Trim ();
+                //if (string.IsNullOrEmpty (home))
+                //    home = Environment.GetFolderPath (Environment.SpecialFolder.Personal).Trim ();
+                //properties ["user.home"] = home;
 				properties ["java.library.path"] = Environment.GetEnvironmentVariable ("PATH");
 				if (Path.DirectorySeparatorChar != '\\')
 					properties ["os.name"] = "Unix";

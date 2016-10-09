@@ -54,6 +54,9 @@ namespace GitSSHConnectionTest
 
         private static void TryToClone(string localPath, string url)
         {
+            Console.WriteLine("Cloning:" + url);
+            Console.WriteLine("To:" + localPath);
+
             try
             {
                 m_client =
@@ -85,6 +88,9 @@ namespace GitSSHConnectionTest
                 //throw new AuthenticationException(Resources.COULD_NOT_CONNECT_MESSAGE, e.Message);
                 throw e;
             }
+
+            Console.WriteLine("Ok");
+
         }
 
         static void runTest(string dir, string url)
