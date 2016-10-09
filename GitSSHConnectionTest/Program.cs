@@ -24,6 +24,16 @@ namespace GitSSHConnectionTest
     {
         private static GitClient m_client;
 
+        private const string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db01";
+        private const string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
+        private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
+        private const string m_url_github = "git@github.com:apexsql-test/test02.git";
+        private const string m_url_bitbucket = "git@bitbucket.org:apexsql_test/sql_test_04.git";
+        private const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
+        private const string passPhase = "";
+        private const string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
+        private const string LogFile = "JSch.log";
+
         private static void ClearDirectory(string targetDirectory)
         {
             foreach (string directory in Directory.GetDirectories(targetDirectory))
@@ -70,22 +80,25 @@ namespace GitSSHConnectionTest
             catch (NullReferenceException nullReferenceException)
             {
                 ApexSql.Common.Logging.Logger.Exception(nullReferenceException);
+                Console.WriteLine(nullReferenceException.Message);
+                ClearDirectory(localPath);
                 DeleteEmptyRepository(localPath);
-                //throw new AuthenticationException(Resources.COULD_NOT_CONNECT);
                 throw nullReferenceException;
             }
             catch (JGitInternalException jGitInternalException)
             {
                 ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message);
+                ClearDirectory(localPath);
                 DeleteEmptyRepository(localPath);
-                //throw new AuthenticationException(Resources.AUTH_ACCESS_DENIED);
                 throw jGitInternalException;
             }
             catch (Exception e)
             {
                 ApexSql.Common.Logging.Logger.Exception(e);
+                Console.WriteLine(e.Message);
+                ClearDirectory(localPath);
                 DeleteEmptyRepository(localPath);
-                //throw new AuthenticationException(Resources.COULD_NOT_CONNECT_MESSAGE, e.Message);
                 throw e;
             }
 
@@ -102,16 +115,6 @@ namespace GitSSHConnectionTest
 
         static void Main(string[] args)
         {
-            string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db01";
-            string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
-            string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
-            string m_url_github = "git@github.com:apexsql-test/test02.git";
-            string m_url_bitbucket = "git@bitbucket.org:apexsql_test/sql_test_04.git";
-            string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
-            string passPhase = "";
-            string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
-            string LogFile = "JSch.log";
-
             ApexSql.Common.Logging.Logger.LogFolder = LogFolder;
             ApexSql.Common.Logging.Logger.LogFileName = LogFile;
             ApexSql.Common.Logging.Logger.MaxLogSize = 5242880;
@@ -133,14 +136,17 @@ namespace GitSSHConnectionTest
             }
             catch (JGitInternalException jGitInternalException)
             {
-                //Logger.Exception(jGitInternalException);
-                Trace.Write(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
             }
             catch (Exception ex)
             {
-                //Logger.Exception(ex);
-                Trace.Write(ex.Message);
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
             }
+
+            Console.WriteLine("Press any key to EXIT");
+            while (!Console.KeyAvailable) ;
 
         }
     }
