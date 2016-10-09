@@ -71,17 +71,20 @@ namespace NGit.Util
 		public static readonly DateTime NEVER = Sharpen.Extensions.CreateDate(long.MaxValue
 			);
 
-		private sealed class _ThreadLocal_74 : ThreadLocal<IDictionary<GitDateParser.ParseableSimpleDateFormat
-			, SimpleDateFormat>>
-		{
-			public _ThreadLocal_74()
-				: base (() => new Dictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat>())
-			{
-			}
-		}
+        //private sealed class _ThreadLocal_74 : ThreadLocal<IDictionary<GitDateParser.ParseableSimpleDateFormat
+        //    , SimpleDateFormat>>
+        //{
+        //    public _ThreadLocal_74()
+        //        : base (() => new Dictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat>())
+        //    {
+        //    }
+        //}
 
-		private static ThreadLocal<IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat
-			>> formatCache = new _ThreadLocal_74();
+        //private static ThreadLocal<IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat
+        //    >> formatCache = new _ThreadLocal_74();
+
+        private static IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat> formatCache =
+            new Dictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat>();
 
 		// Gets an instance of a SimpleDateFormat. If there is not already an
 		// appropriate instance in the (ThreadLocal) cache the create one and put in
@@ -89,8 +92,9 @@ namespace NGit.Util
 		private static SimpleDateFormat GetDateFormat(GitDateParser.ParseableSimpleDateFormat
 			 f)
 		{
-			IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat> map = formatCache
-				.Value;
+            //IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat> map = formatCache
+            //    .Value;
+			IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat> map = formatCache;
 			SimpleDateFormat dateFormat = map.Get(f);
 			if (dateFormat != null)
 			{
