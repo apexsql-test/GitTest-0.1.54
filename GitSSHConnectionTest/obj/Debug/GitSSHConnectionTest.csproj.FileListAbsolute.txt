@@ -1,0 +1,12 @@
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\obj\Debug\GitSSHConnectionTest.csprojResolveAssemblyReference.cache
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\GitSSHConnectionTest.exe.config
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\GitSSHConnectionTest.exe
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\GitSSHConnectionTest.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\NGit.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\NSch.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\Sharpen.dll
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\NGit.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\NSch.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\bin\Debug\Sharpen.pdb
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\obj\Debug\GitSSHConnectionTest.exe
+C:\Users\Grigoryan\Documents\ApexSQL\GitTest 0.1.54\GitSSHConnectionTest\obj\Debug\GitSSHConnectionTest.pdb

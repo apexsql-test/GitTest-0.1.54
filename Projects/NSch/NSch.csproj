@@ -55,8 +55,13 @@
     <Compile Include="NSch\CipherNone.cs" />
     <Compile Include="NSch\Compression.cs" />
     <Compile Include="NSch\DH.cs" />
+    <Compile Include="NSch\DHEC256.cs" />
+    <Compile Include="NSch\DHEC384.cs" />
+    <Compile Include="NSch\DHEC521.cs" />
+    <Compile Include="NSch\DHECN.cs" />
     <Compile Include="NSch\DHG1.cs" />
     <Compile Include="NSch\DHGEX.cs" />
+    <Compile Include="NSch\ECDH.cs" />
     <Compile Include="NSch\ForwardedTCPIPDaemon.cs" />
     <Compile Include="NSch\GSSContext.cs" />
     <Compile Include="NSch\HASH.cs" />

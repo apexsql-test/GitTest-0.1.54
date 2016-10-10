@@ -68,6 +68,7 @@ namespace NSch
 			config.Put("diffie-hellman-group-exchange-sha1", "com.jcraft.jsch.DHGEX");
 			config.Put("diffie-hellman-group1-sha1", "com.jcraft.jsch.DHG1");
 			config.Put("diffie-hellman-group14-sha1", "com.jcraft.jsch.DHG14");
+			config.Put("ecdh-sha2-nistp", "com.jcraft.jsch.jce.ECDHN");
 			config.Put("dh", "com.jcraft.jsch.jce.DH");
 			config.Put("3des-cbc", "com.jcraft.jsch.jce.TripleDESCBC");
 			config.Put("blowfish-cbc", "com.jcraft.jsch.jce.BlowfishCBC");
