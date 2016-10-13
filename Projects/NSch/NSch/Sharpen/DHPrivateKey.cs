@@ -23,17 +23,18 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-using System;
-using Mono.Math;
-using Mono.Security.Cryptography;
 
 namespace Sharpen
 {
 	public class DHPrivateKey: PrivateKey
 	{
-		public DHParameters Parameters { get; private set; }
-		
-		public DHPrivateKey (DHParameters dhpars)
+        public Rebex.Security.Cryptography.DiffieHellmanParameters Parameters
+        {
+            get;
+            private set;
+        }
+
+        public DHPrivateKey(Rebex.Security.Cryptography.DiffieHellmanParameters dhpars)
 		{
 			Parameters = dhpars;
 		}

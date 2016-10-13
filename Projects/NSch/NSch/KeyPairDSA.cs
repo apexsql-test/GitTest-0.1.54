@@ -361,7 +361,7 @@ namespace NSch
 			return null;
 		}
 
-        public override SignatureBase GetVerifier()
+		public override SignatureBase GetVerifier()
 		{
 			try
 			{
@@ -404,8 +404,8 @@ namespace NSch
 		}
 
 		/// <exception cref="NSch.JSchException"/>
-        public override byte[] ForSSHAgent()
-        {
+		public override byte[] ForSSHAgent()
+		{
 			if (IsEncrypted())
 			{
 				throw new JSchException("key is encrypted.");

@@ -29,6 +29,8 @@ using System.Security.Cryptography;
 using Mono.Security.Cryptography;
 using Mono.Math;
 
+using Rebex.Security.Cryptography;
+
 namespace Sharpen
 {
 	public abstract class KeyPairGenerator
@@ -109,9 +111,15 @@ namespace Sharpen
 		
 		public override KeyPair GenerateKeyPair ()
 		{
-			DiffieHellmanManaged dh = new DiffieHellmanManaged (pspec.P.GetBytes (), pspec.G.GetBytes (), 0);
-			DHParameters dhpars = dh.ExportParameters (true);
-			BigInteger y = new BigInteger (dh.CreateKeyExchange ());
+            Rebex.Security.Cryptography.DiffieHellmanManaged dh = new Rebex.Security.Cryptography.DiffieHellmanManaged(16384);
+		    var t = new DiffieHellmanParameters();
+            t.G = pspec.G.GetBytes();
+		    t.P = pspec.P.GetBytes();
+		    dh.ImportParameters(t);
+
+            Rebex.Security.Cryptography.DiffieHellmanParameters dhpars = dh.ExportParameters(true);
+
+            BigInteger y = new BigInteger(dh.GetPublicKey());
 			return new KeyPair (new DHPrivateKey (dhpars), new DHPublicKey (y));
 		}
 	}

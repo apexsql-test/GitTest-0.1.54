@@ -46,13 +46,13 @@ namespace Sharpen
 	
 	class DHKeyAgreement: KeyAgreement
 	{
-		DiffieHellmanManaged dh;
+        Rebex.Security.Cryptography.DiffieHellmanManaged dh;
 		DHPublicKey pubk;
 		
 		public override void Init (Key key)
 		{
 			DHPrivateKey pk = (DHPrivateKey) key;
-			dh = new DiffieHellmanManaged ();
+            dh = new Rebex.Security.Cryptography.DiffieHellmanManaged();
 			dh.ImportParameters (pk.Parameters);
 		}
 		
@@ -66,7 +66,7 @@ namespace Sharpen
 		
 		public override byte[] GenerateSecret ()
 		{
-			return dh.DecryptKeyExchange (pubk.GetY ().GetBytes ());
+			return dh.GetSharedSecretKey(pubk.GetY ().GetBytes ());
 		}
 	}
 }

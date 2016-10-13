@@ -39,10 +39,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Depending\Mono.Security.dll</HintPath>
     </Reference>
+    <Reference Include="rebex.security">
+      <HintPath>..\..\Depending\rebex.security.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
+    <None Include="NSch.Jce\KeyPairGenECDSA.cs" />
     <Compile Include="NSch\Buffer.cs" />
     <Compile Include="NSch\Channel.cs" />
     <Compile Include="NSch\ChannelAgentForwarding.cs" />
