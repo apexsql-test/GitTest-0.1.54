@@ -1211,7 +1211,6 @@ loop_break: ;
 			byte[] K = kex.GetK();
 			byte[] H = kex.GetH();
 			HASH hash = kex.GetHash();
-			//    String[] guess=kex.guess;
 			if (session_id == null)
 			{
 				session_id = new byte[H.Length];
@@ -1317,7 +1316,7 @@ loop_break: ;
 				{
 					if (t > 0L && (Runtime.CurrentTimeMillis() - kex_start_time) > t)
 					{
-						throw new JSchException("timeout in wating for rekeying process.");
+						throw new JSchException("timeout in waiting for rekeying process.");
 					}
 					try
 					{
@@ -1424,7 +1423,7 @@ loop_break: ;
 			{
 				if (t > 0L && (Runtime.CurrentTimeMillis() - kex_start_time) > t)
 				{
-					throw new JSchException("timeout in wating for rekeying process.");
+					throw new JSchException("timeout in waiting for rekeying process.");
 				}
 				byte command = packet.buffer.GetCommand();
 				//System.err.println("command: "+command);
@@ -1485,6 +1484,7 @@ loop_break: ;
 					}
 					catch (ThreadInterruptedException ee)
 					{
+/*SocketTimeoutException*/
 						if (!in_kex && stimeout < serverAliveCountMax)
 						{
 							SendKeepAliveMsg();
@@ -1670,17 +1670,16 @@ loop_break: ;
 							buf.GetShort();
 							i = buf.GetInt();
 							channel = Channel.GetChannel(i, this);
-							if (channel == null)
-							{
-							}
-							//break;
 							int r = buf.GetInt();
 							long rws = buf.GetUInt();
 							int rps = buf.GetInt();
-							channel.SetRemoteWindowSize(rws);
-							channel.SetRemotePacketSize(rps);
-							channel.open_confirmation = true;
-							channel.SetRecipient(r);
+							if (channel != null)
+							{
+								channel.SetRemoteWindowSize(rws);
+								channel.SetRemotePacketSize(rps);
+								channel.open_confirmation = true;
+								channel.SetRecipient(r);
+							}
 							break;
 						}
 
@@ -1690,17 +1689,16 @@ loop_break: ;
 							buf.GetShort();
 							i = buf.GetInt();
 							channel = Channel.GetChannel(i, this);
-							if (channel == null)
+							if (channel != null)
 							{
+								int reason_code = buf.GetInt();
+								//foo=buf.getString();  // additional textual information
+								//foo=buf.getString();  // language tag 
+								channel.SetExitStatus(reason_code);
+								channel.close = true;
+								channel.eof_remote = true;
+								channel.SetRecipient(0);
 							}
-							//break;
-							int reason_code = buf.GetInt();
-							//foo=buf.getString();  // additional textual information
-							//foo=buf.getString();  // language tag 
-							channel.SetExitStatus(reason_code);
-							channel.close = true;
-							channel.eof_remote = true;
-							channel.SetRecipient(0);
 							break;
 						}
 
@@ -1765,9 +1763,8 @@ loop_break: ;
 									tmp.SetDaemon(daemon_thread);
 								}
 								tmp.Start();
-								break;
 							}
-							goto case SSH_MSG_CHANNEL_SUCCESS;
+							break;
 						}
 
 						case SSH_MSG_CHANNEL_SUCCESS:
