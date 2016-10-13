@@ -87,7 +87,7 @@ namespace NSch
 
 		private Buffer mbuf = null;
 
-		public ChannelAgentForwarding() : base()
+		internal ChannelAgentForwarding(): base()
 		{
 			SetLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
 			SetLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);

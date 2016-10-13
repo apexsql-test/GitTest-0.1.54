@@ -161,10 +161,10 @@ namespace NSch
 			}
 			if (this.config == null)
 			{
-          if (JSch.GetLogger().IsEnabled(Logger.ERROR))
-          {
-              JSch.GetLogger().Log(Logger.ERROR, "ChannelForwardedTCPIP: " + Util.Byte2str(addr) + ":" + port + " is not registered.");
-          }
+				if (JSch.GetLogger().IsEnabled(Logger.ERROR))
+				{
+					JSch.GetLogger().Log(Logger.ERROR, "ChannelForwardedTCPIP: " + Util.Byte2str(addr) + ":" + port + " is not registered.");
+				}
 			}
 		}
 

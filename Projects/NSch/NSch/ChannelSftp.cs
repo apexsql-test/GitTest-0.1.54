@@ -3314,7 +3314,7 @@ loop_break: ;
 			else
 			{
 				len += (4 + extension.Length);
-                PutHEAD(SSH_FXP_EXTENDED, len);
+        PutHEAD(SSH_FXP_EXTENDED, len);
 				buf.PutInt(seq++);
 				buf.PutString(Util.Str2byte(extension));
 			}

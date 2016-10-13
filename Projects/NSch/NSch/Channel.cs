@@ -229,7 +229,7 @@ namespace NSch
 		{
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void Start()
 		{
 		}
@@ -1001,7 +1001,7 @@ namespace NSch
 			this.session = session;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual Session GetSession()
 		{
 			Session _session = session;
