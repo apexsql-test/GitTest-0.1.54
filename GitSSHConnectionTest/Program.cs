@@ -23,16 +23,9 @@ namespace GitSSHConnectionTest
     class Program
     {
         private static GitClient m_client;
-
         private const string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db01";
         private const string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
         private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
-        private const string m_url_github = "git@github.com:apexsql-test/test02.git";
-        private const string m_url_bitbucket = "git@bitbucket.org:apexsql_test/sql_test_04.git";
-        private const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
-        private const string passPhase = "";
-        private const string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
-        private const string LogFile = "JSch.log";
 
         private static void ClearDirectory(string targetDirectory)
         {
@@ -113,14 +106,12 @@ namespace GitSSHConnectionTest
             TryToClone(dir, url);
         }
 
-        static void Main(string[] args)
+        static void runSSHTest()
         {
-            ApexSql.Common.Logging.Logger.LogFolder = LogFolder;
-            ApexSql.Common.Logging.Logger.LogFileName = LogFile;
-            ApexSql.Common.Logging.Logger.MaxLogSize = 5242880;
-            ApexSql.Common.Logging.Logger.Level = ApexSql.Common.Logging.LoggingLevel.All;
-
-            JSch.SetLogger(new JSchLogger());
+            const string github_url = "git@github.com:apexsql-test/test02.git";
+            const string bitbucket_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
+            const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
+            const string passPhase = "";
 
             var sshSessionFactory = new GitSessionFactorySSHCredentials();
             sshSessionFactory.Passphase = passPhase;
@@ -130,9 +121,9 @@ namespace GitSSHConnectionTest
 
             try
             {
-                runTest(GitHubDir01, m_url_github);
-                runTest(GitHubDir02, m_url_github);
-                runTest(BitBucketDir01, m_url_bitbucket);
+                runTest(GitHubDir01, github_url);
+                runTest(GitHubDir02, github_url);
+                runTest(BitBucketDir01, bitbucket_url);
             }
             catch (JGitInternalException jGitInternalException)
             {
@@ -144,6 +135,57 @@ namespace GitSSHConnectionTest
                 ApexSql.Common.Logging.Logger.Exception(ex);
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        static void runHTTPSTest()
+        {
+            const string github_login = "apexsql-test";
+            const string github_pswd = "apex_SQL01";
+            const string bitbucket_login = "apexsql_test";
+            const string bitbucket_pswd = "apex_SQL";
+            const string github_url = "https://github.com/apexsql-test/test02.git";
+            const string bitbucket_url = "https://apexsql_test@bitbucket.org/apexsql_test/sql_test_04.git";
+
+
+
+
+            try
+            {
+                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(github_login, github_pswd));
+                runTest(GitHubDir01, github_url);
+                //runTest(GitHubDir02, github_url);
+
+                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(bitbucket_login, bitbucket_pswd));
+                runTest(BitBucketDir01, bitbucket_url);
+            }
+            catch (JGitInternalException jGitInternalException)
+            {
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+            }
+            catch (Exception ex)
+            {
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
+            }
+
+        }
+
+
+        static void Main(string[] args)
+        {
+            const string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
+            const string LogFile = "JSch.log";
+
+            ApexSql.Common.Logging.Logger.LogFolder = LogFolder;
+            ApexSql.Common.Logging.Logger.LogFileName = LogFile;
+            ApexSql.Common.Logging.Logger.MaxLogSize = 5242880;
+            ApexSql.Common.Logging.Logger.Level = ApexSql.Common.Logging.LoggingLevel.All;
+
+            JSch.SetLogger(new JSchLogger());
+
+            //runSSHTest();
+            runHTTPSTest();
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
