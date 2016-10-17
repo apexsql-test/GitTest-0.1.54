@@ -436,8 +436,7 @@ namespace NGit.Transport
 		/// </remarks>
 		/// <param name="cmp">comparison function, if null objects are stored by ObjectId.</param>
 		/// <returns>sorted list of objects in this pack stream.</returns>
-		public virtual IList<PackedObjectInfo> GetSortedObjectList(IComparer<PackedObjectInfo
-			> cmp)
+		public virtual IList<PackedObjectInfo> GetSortedObjectList(IComparer<PackedObjectInfo> cmp)
 		{
 			Arrays.Sort(entries, 0, entryCount, cmp);
 			IList<PackedObjectInfo> list = Arrays.AsList(entries);

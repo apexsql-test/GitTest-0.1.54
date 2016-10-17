@@ -89,8 +89,7 @@ namespace NGit.Util
 		// Gets an instance of a SimpleDateFormat. If there is not already an
 		// appropriate instance in the (ThreadLocal) cache the create one and put in
 		// into the cache
-		private static SimpleDateFormat GetDateFormat(GitDateParser.ParseableSimpleDateFormat
-			 f)
+		private static SimpleDateFormat GetDateFormat(GitDateParser.ParseableSimpleDateFormat f)
 		{
             //IDictionary<GitDateParser.ParseableSimpleDateFormat, SimpleDateFormat> map = formatCache
             //    .Value;

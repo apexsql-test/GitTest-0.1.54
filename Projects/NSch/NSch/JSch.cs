@@ -40,8 +40,7 @@ namespace NSch
 {
 	public class JSch
 	{
-		/// <summary>The version number.</summary>
-		public const string VERSION = "0.1.54";
+		public const string VERSION = "0.1.46";
 
 		internal static Hashtable config = new Hashtable();
 
@@ -68,7 +67,6 @@ namespace NSch
 			config.Put("diffie-hellman-group-exchange-sha1", "com.jcraft.jsch.DHGEX");
 			config.Put("diffie-hellman-group1-sha1", "com.jcraft.jsch.DHG1");
 			config.Put("diffie-hellman-group14-sha1", "com.jcraft.jsch.DHG14");
-			config.Put("ecdh-sha2-nistp", "com.jcraft.jsch.jce.ECDHN");
 			config.Put("dh", "com.jcraft.jsch.jce.DH");
 			config.Put("3des-cbc", "com.jcraft.jsch.jce.TripleDESCBC");
 			config.Put("blowfish-cbc", "com.jcraft.jsch.jce.BlowfishCBC");
@@ -136,9 +134,9 @@ namespace NSch
 
 		private HostKeyRepository known_hosts = null;
 
-		private sealed class _Logger_183 : Logger
+		private sealed class _Logger_134 : Logger
 		{
-			public _Logger_183()
+			public _Logger_134()
 			{
 			}
 
@@ -152,7 +150,7 @@ namespace NSch
 			}
 		}
 
-		private static readonly Logger DEVNULL = new _Logger_183();
+		private static readonly Logger DEVNULL = new _Logger_134();
 
 		internal static Logger logger = DEVNULL;
 
