@@ -47,6 +47,9 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <None Include="NSch.Jce\KeyPairGenECDSA.cs" />
+    <Compile Include="NSch.Jce\HMAC.cs" />
+    <Compile Include="NSch.Jce\HMACSHA256.cs" />
+    <None Include="NSch.Jce\HMACSHA512.cs" />
     <Compile Include="NSch\Buffer.cs" />
     <Compile Include="NSch\Channel.cs" />
     <Compile Include="NSch\ChannelAgentForwarding.cs" />

@@ -1,5 +1,6 @@
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2006-2016 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2012-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -24,41 +25,28 @@ OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-This code is based on jsch (http://www.jcraft.com/jsch).
-All credit should go to the authors of jsch.
 */
-
-using System;
-using NSch.Jcraft;
+using NSch;
 using Sharpen;
 
-namespace NSch.Jcraft
+namespace NSch.Jce
 {
-	internal class HMAC
+	public abstract class HMAC : MAC
 	{
-		private const int B = 64;
+		protected internal string name;
 
-		private byte[] k_ipad = null;
+		protected internal int bsize;
 
-		private byte[] k_opad = null;
+		protected internal string algorithm;
 
-		private MessageDigest md = null;
-
-		private int bsize = 0;
-
-		protected internal virtual void SetH(MessageDigest md)
-		{
-			this.md = md;
-			bsize = md.GetDigestLength();
-		}
+		private Mac mac;
 
 		public virtual int GetBlockSize()
 		{
 			return bsize;
 		}
 
-		/// <exception cref="System.Exception"></exception>
+		/// <exception cref="System.Exception"/>
 		public virtual void Init(byte[] key)
 		{
 			if (key.Length > bsize)
@@ -67,21 +55,9 @@ namespace NSch.Jcraft
 				System.Array.Copy(key, 0, tmp, 0, bsize);
 				key = tmp;
 			}
-			if (key.Length > B)
-			{
-				md.Update(key, 0, key.Length);
-				key = md.Digest();
-			}
-			k_ipad = new byte[B];
-			System.Array.Copy(key, 0, k_ipad, 0, key.Length);
-			k_opad = new byte[B];
-			System.Array.Copy(key, 0, k_opad, 0, key.Length);
-			for (int i = 0; i < B; i++)
-			{
-				k_ipad[i] ^= unchecked((byte)unchecked((int)(0x36)));
-				k_opad[i] ^= unchecked((byte)unchecked((int)(0x5c)));
-			}
-			md.Update(k_ipad, 0, B);
+			SecretKeySpec skey = new SecretKeySpec(key, algorithm);
+			mac = Mac.GetInstance(algorithm);
+			mac.Init(skey);
 		}
 
 		private readonly byte[] tmp = new byte[4];
@@ -97,22 +73,24 @@ namespace NSch.Jcraft
 
 		public virtual void Update(byte[] foo, int s, int l)
 		{
-			md.Update(foo, s, l);
+			mac.Update(foo, s, l);
 		}
 
 		public virtual void DoFinal(byte[] buf, int offset)
 		{
-			byte[] result = md.Digest();
-			md.Update(k_opad, 0, B);
-			md.Update(result, 0, bsize);
 			try
 			{
-				md.Digest(buf, offset, bsize);
+				mac.DoFinal(buf, offset);
 			}
-			catch (Exception)
+			catch (ShortBufferException e)
 			{
+                System.Console.Error.WriteLine(e);
 			}
-			md.Update(k_ipad, 0, B);
+		}
+
+		public virtual string GetName()
+		{
+			return name;
 		}
 	}
 }

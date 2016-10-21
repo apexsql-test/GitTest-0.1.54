@@ -46,21 +46,19 @@ namespace NSch
 
 		static JSch()
 		{
-			//  config.put("kex", "diffie-hellman-group-exchange-sha1");
 			config.Put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha1"
 				);
 			config.Put("server_host_key", "ssh-rsa,ssh-dss");
-			//    config.put("server_host_key", "ssh-dss,ssh-rsa");
 			config.Put("cipher.s2c", "aes128-ctr,aes128-cbc,3des-ctr,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,arcfour256,arcfour128"
 				);
 			config.Put("cipher.c2s", "aes128-ctr,aes128-cbc,3des-ctr,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,arcfour256,arcfour128"
 				);
+            //config.Put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96");
+            //config.Put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96");
 			config.Put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
 			config.Put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
 			config.Put("compression.s2c", "none");
-			// config.put("compression.s2c", "zlib@openssh.com,zlib,none");
 			config.Put("compression.c2s", "none");
-			// config.put("compression.c2s", "zlib@openssh.com,zlib,none");
 			config.Put("lang.s2c", string.Empty);
 			config.Put("lang.c2s", string.Empty);
 			config.Put("compression_level", "6");
@@ -72,6 +70,7 @@ namespace NSch
 			config.Put("blowfish-cbc", "com.jcraft.jsch.jce.BlowfishCBC");
 			config.Put("hmac-sha1", "com.jcraft.jsch.jce.HMACSHA1");
 			config.Put("hmac-sha1-96", "com.jcraft.jsch.jce.HMACSHA196");
+			config.Put("hmac-sha2-256", "com.jcraft.jsch.jce.HMACSHA256");
 			config.Put("hmac-md5", "com.jcraft.jsch.jce.HMACMD5");
 			config.Put("hmac-md5-96", "com.jcraft.jsch.jce.HMACMD596");
 			config.Put("sha-1", "com.jcraft.jsch.jce.SHA1");
@@ -103,7 +102,6 @@ namespace NSch
 			config.Put("zlib@openssh.com", "com.jcraft.jsch.jcraft.Compression");
 			config.Put("StrictHostKeyChecking", "ask");
 			config.Put("HashKnownHosts", "no");
-			//config.put("HashKnownHosts",  "yes");
 			config.Put("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive,password"
 				);
 			config.Put("CheckCiphers", "aes256-ctr,aes192-ctr,aes128-ctr,aes256-cbc,aes192-cbc,aes128-cbc,3des-ctr,arcfour,arcfour128,arcfour256"
