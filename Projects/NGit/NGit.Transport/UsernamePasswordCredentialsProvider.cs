@@ -41,6 +41,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
+using System.Text;
+
 using NGit.Errors;
 using NGit.Transport;
 using Sharpen;
@@ -58,12 +61,14 @@ namespace NGit.Transport
 
 		private char[] password;
 
+        private bool basicHttpAuth;
+
 		/// <summary>Initialize the provider with a single username and password.</summary>
 		/// <remarks>Initialize the provider with a single username and password.</remarks>
 		/// <param name="username"></param>
 		/// <param name="password"></param>
-		public UsernamePasswordCredentialsProvider(string username, string password) : this
-			(username, password.ToCharArray())
+		public UsernamePasswordCredentialsProvider(string username, string password, bool basicHttpAuth) : this
+            (username, password.ToCharArray(), basicHttpAuth)
 		{
 		}
 
@@ -71,10 +76,11 @@ namespace NGit.Transport
 		/// <remarks>Initialize the provider with a single username and password.</remarks>
 		/// <param name="username"></param>
 		/// <param name="password"></param>
-		public UsernamePasswordCredentialsProvider(string username, char[] password)
+        public UsernamePasswordCredentialsProvider(string username, char[] password, bool basicHttpAuth)
 		{
 			this.username = username;
 			this.password = password;
+            this.basicHttpAuth = basicHttpAuth;
 		}
 
 		public override bool IsInteractive()
@@ -145,5 +151,33 @@ namespace NGit.Transport
 				password = null;
 			}
 		}
+
+        private string GetBase64EncodedCredentials()
+        {
+            const string UsernamePasswordFormat = "{0}:{1}";
+
+            string passwordString = new string (this.password);
+            string credPair = String.Format(UsernamePasswordFormat, this.username, passwordString);
+            byte[] credBytes = Encoding.ASCII.GetBytes(credPair);
+            string base64enc = Convert.ToBase64String(credBytes);
+
+            return base64enc;
+        }
+
+        public string GetBasicAuthorizationHeader()
+        {
+            if (!basicHttpAuth)
+            {
+                return null;
+            }
+
+            const string BasicPrefix = "Basic ";
+
+            // credentials are packed into the 'Authorization' header as a base64 encoded pair
+            string base64enc = GetBase64EncodedCredentials();
+            string basicAuthHeader = BasicPrefix + base64enc;
+
+            return basicAuthHeader;
+        }
 	}
 }

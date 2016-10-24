@@ -39,9 +39,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ApexSQL.Common.Logging, Version=2.1.40.0, Culture=neutral, PublicKeyToken=3b936d7fbc8f6b28, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Depending\Common\ApexSQL.Common.Logging.dll</HintPath>
+    <Reference Include="ApexSQL.Common.Logging">
+      <HintPath>..\Depending\ApexSQL.Common.Logging.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Alm.Authentication">
       <HintPath>..\Depending\Microsoft.Alm.Authentication.dll</HintPath>

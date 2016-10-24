@@ -26,10 +26,11 @@ namespace GitSSHConnectionTest
     {
         private static GitClient m_client;
         private static Credential m_vsoCredentials;
-        private const string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db01";
-        private const string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
-        private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
-        private const string VsoDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\vso_db01";
+        private const string GitHubDir01 = "C:\\Users\\harut_000\\Tests\\github_db01";
+        private const string BitBucketDir01 = "C:\\Users\\harut_000\\Tests\\bitbucket_db01";
+        private const string VsoDir01 = "C:\\Users\\harut_000\\Tests\\vso_db1";
+        private const string TfsDir01 = "C:\\Users\\harut_000\\Tests\\tfs_db1";
+
         const int TIMEOUT_IN_MILLISECONDS = 120000;
 
         private static void ClearDirectory(string targetDirectory)
@@ -127,7 +128,7 @@ namespace GitSSHConnectionTest
             try
             {
                 runTest(GitHubDir01, github_url);
-                runTest(GitHubDir02, github_url);
+                //runTest(GitHubDir02, github_url);
                 runTest(BitBucketDir01, bitbucket_url);
             }
             catch (JGitInternalException jGitInternalException)
@@ -156,7 +157,7 @@ namespace GitSSHConnectionTest
             {
                 SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(github_login, github_pswd));
                 runTest(GitHubDir01, github_url);
-                runTest(GitHubDir02, github_url);
+                //runTest(GitHubDir02, github_url);
 
                 SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(bitbucket_login, bitbucket_pswd));
                 runTest(BitBucketDir01, bitbucket_url);
@@ -217,15 +218,10 @@ namespace GitSSHConnectionTest
 
         static void run_VSO_HTTPS_Test()
         {
-            //string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
-            ////TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
-            //TargetUri target = new TargetUri("https://harut70.visualstudio.com/");
+            string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
+            //TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
+            TargetUri target = new TargetUri("https://harut70.visualstudio.com/");
             //string username = "harut70";
-
-            string vso_url = "https://grigoryanharutiun.visualstudio.com/DefaultCollection/_git/HarutTest";
-            TargetUri target = new TargetUri("https://grigoryanharutiun.visualstudio.com/");
-            string username = "grigoryanharutiun@milosdjosovicapexsql.onmicrosoft.com";
-            //string pswd = "";
 
             m_vsoCredentials = null;
 
@@ -261,6 +257,61 @@ namespace GitSSHConnectionTest
                 SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password));
                 //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
                 runTest(VsoDir01, vso_url);
+            }
+            catch (JGitInternalException jGitInternalException)
+            {
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+            }
+            catch (Exception ex)
+            {
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
+            }
+
+        }
+
+        static void run_TFS_HTTPS_Test()
+        {
+
+            string tfs_url = "https://grigoryanharutiun.visualstudio.com/DefaultCollection/_git/HarutTest";
+            TargetUri target = new TargetUri("https://grigoryanharutiun.visualstudio.com/");
+            //string username = "grigoryanharutiun@milosdjosovicapexsql.onmicrosoft.com";
+
+            m_vsoCredentials = null;
+
+            try
+            {
+                const string GIT_NAMESPACE = "git";
+                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
+                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
+
+                BaseAuthentication authority =
+                    BaseVstsAuthentication.GetAuthentication(target,
+                                                            VstsCredentialScope,
+                                                            secrets);
+                if (null == authority)
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (authority is VstsMsaAuthentication)
+                {
+                    GetVSOCredential(target, secrets, VstsCredentialScope);
+                }
+                else if (authority is VstsAadAuthentication)
+                {
+                    GetTFSCredential(target, secrets, VstsCredentialScope);
+                }
+
+                if (null == m_vsoCredentials)
+                {
+                    throw new NullReferenceException();
+                }
+
+                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password, true));
+                //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
+                runTest(TfsDir01, tfs_url);
             }
             catch (JGitInternalException jGitInternalException)
             {
@@ -316,9 +367,11 @@ namespace GitSSHConnectionTest
             JSch.SetLogger(new JSchLogger());
 
             //runSSHTest();
-            //runHTTPSTest();
-            run_VSO_HTTPS_Test();
             //run_VSO_SSH_Test();
+
+            runHTTPSTest();
+            run_VSO_HTTPS_Test();
+            run_TFS_HTTPS_Test();
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
