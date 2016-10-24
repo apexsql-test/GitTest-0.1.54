@@ -30,6 +30,7 @@ namespace GitSSHConnectionTest
         private const string GitHubDir02 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\github_db02";
         private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
         private const string VsoDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\vso_db01";
+        const int TIMEOUT_IN_MILLISECONDS = 120000;
 
         private static void ClearDirectory(string targetDirectory)
         {
@@ -172,17 +173,10 @@ namespace GitSSHConnectionTest
             }
         }
 
-        static void GetVSOCredential(TargetUri target)
+        static void GetVSOCredential(TargetUri target, SecretStore secrets, VstsTokenScope VstsCredentialScope)
         {
-            const string GIT_NAMESPACE = "git";
-            const int TIMEOUT_IN_MILLISECONDS = 120000;
-
             Credential credentialToTry = null;
-            VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
-            var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
             VstsMsaAuthentication msaAuth = new VstsMsaAuthentication(VstsCredentialScope, secrets);
-
-            m_vsoCredentials = null;
 
             // Try getting the credentails from the store.
             // If does not work try getting credentials with interactive login.
@@ -199,20 +193,73 @@ namespace GitSSHConnectionTest
             }).Wait(TIMEOUT_IN_MILLISECONDS);
         }
 
+        static void GetTFSCredential(TargetUri target, SecretStore secrets, VstsTokenScope VstsCredentialScope)
+        {
+            Credential credentialToTry = null;
+            Guid tenantId = Guid.Empty;
+            // return the allocated authority or a generic AAD backed VSTS authentication object
+            VstsAadAuthentication aadAuth = new VstsAadAuthentication(Guid.Empty, VstsCredentialScope, secrets);
+
+            // Try getting the credentails from the store.
+            // If does not work try getting credentials with interactive login.
+            // Credentials must be verified in both cases
+            Task.Run(async () =>
+            {
+                if (((credentialToTry = aadAuth.GetCredentials(target)) != null) &&
+                    (await aadAuth.ValidateCredentials(target, credentialToTry))
+                    || ((credentialToTry = await aadAuth.InteractiveLogon(target, true)) != null) &&
+                    (await aadAuth.ValidateCredentials(target, credentialToTry)))
+                {
+                    m_vsoCredentials = credentialToTry;
+                }
+            }).Wait(TIMEOUT_IN_MILLISECONDS);
+        }
+
         static void run_VSO_HTTPS_Test()
         {
-            string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
-            TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
+            //string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
+            ////TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
+            //TargetUri target = new TargetUri("https://harut70.visualstudio.com/");
+            //string username = "harut70";
+
+            string vso_url = "https://grigoryanharutiun.visualstudio.com/DefaultCollection/_git/HarutTest";
+            TargetUri target = new TargetUri("https://grigoryanharutiun.visualstudio.com/");
+            string username = "grigoryanharutiun@milosdjosovicapexsql.onmicrosoft.com";
+            //string pswd = "";
+
+            m_vsoCredentials = null;
 
             try
             {
-                GetVSOCredential(target);
+                const string GIT_NAMESPACE = "git";
+                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
+                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
+
+                BaseAuthentication authority = 
+                    BaseVstsAuthentication.GetAuthentication(target,
+                                                            VstsCredentialScope,
+                                                            secrets);
+                if (null == authority)
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (authority is VstsMsaAuthentication)
+                {
+                    GetVSOCredential(target, secrets, VstsCredentialScope);
+                }
+                else if (authority is VstsAadAuthentication)
+                {
+                    GetTFSCredential(target, secrets, VstsCredentialScope);
+                }
 
                 if (null == m_vsoCredentials)
                 {
                     throw new NullReferenceException();
                 }
+
                 SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password));
+                //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
                 runTest(VsoDir01, vso_url);
             }
             catch (JGitInternalException jGitInternalException)
@@ -268,8 +315,8 @@ namespace GitSSHConnectionTest
 
             JSch.SetLogger(new JSchLogger());
 
-            runSSHTest();
-            runHTTPSTest();
+            //runSSHTest();
+            //runHTTPSTest();
             run_VSO_HTTPS_Test();
             //run_VSO_SSH_Test();
 
