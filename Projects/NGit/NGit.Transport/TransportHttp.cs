@@ -544,7 +544,6 @@ namespace NGit.Transport
 						//$NON-NLS-1$
 						conn.SetRequestProperty(HttpSupport.HDR_ACCEPT, "*/*");
 					}
-
 					//$NON-NLS-1$
 					int status = HttpSupport.Response(conn);
 					switch (status)

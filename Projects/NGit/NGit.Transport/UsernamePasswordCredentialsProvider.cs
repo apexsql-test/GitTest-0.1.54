@@ -41,9 +41,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-using System;
-using System.Text;
-
 using NGit.Errors;
 using NGit.Transport;
 using Sharpen;
@@ -66,7 +63,7 @@ namespace NGit.Transport
 		/// <param name="username"></param>
 		/// <param name="password"></param>
 		public UsernamePasswordCredentialsProvider(string username, string password) : this
-            (username, password.ToCharArray())
+			(username, password.ToCharArray())
 		{
 		}
 
@@ -74,7 +71,7 @@ namespace NGit.Transport
 		/// <remarks>Initialize the provider with a single username and password.</remarks>
 		/// <param name="username"></param>
 		/// <param name="password"></param>
-        public UsernamePasswordCredentialsProvider(string username, char[] password)
+		public UsernamePasswordCredentialsProvider(string username, char[] password)
 		{
 			this.username = username;
 			this.password = password;

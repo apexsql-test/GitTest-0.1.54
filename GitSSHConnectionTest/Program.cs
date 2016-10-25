@@ -26,10 +26,12 @@ namespace GitSSHConnectionTest
     {
         private static GitClient m_client;
         private static Credential m_vsoCredentials;
-        private const string GitHubDir01 = "C:\\Users\\harut_000\\Tests\\github_db01";
-        private const string BitBucketDir01 = "C:\\Users\\harut_000\\Tests\\bitbucket_db01";
-        private const string VsoDir01 = "C:\\Users\\harut_000\\Tests\\vso_db1";
-        private const string TfsDir01 = "C:\\Users\\harut_000\\Tests\\tfs_db1";
+        private const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
+        private const string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\github_db01";
+        private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
+        private const string VsoDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\vso_db1";
+        private const string TfsDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\\\Tests\\tfs_db1";
+        private const string TfsSSHDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\_git_tfs_ssh";
 
         const int TIMEOUT_IN_MILLISECONDS = 120000;
 
@@ -116,7 +118,6 @@ namespace GitSSHConnectionTest
         {
             const string github_url = "git@github.com:apexsql-test/test02.git";
             const string bitbucket_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
-            const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
             const string passPhase = "";
 
             var sshSessionFactory = new GitSessionFactorySSHCredentials();
@@ -331,7 +332,6 @@ namespace GitSSHConnectionTest
         static void run_VSO_SSH_Test()
         {
             const string vso_url = "ssh://harut70@harut70.visualstudio.com:22/_git/ApexSQL%20VSO%20version";
-            const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
             const string passPhase = "";
 
             var sshSessionFactory = new GitSessionFactorySSHCredentials();
@@ -343,6 +343,33 @@ namespace GitSSHConnectionTest
             try
             {
                 runTest(VsoDir01, vso_url);
+            }
+            catch (JGitInternalException jGitInternalException)
+            {
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+            }
+            catch (Exception ex)
+            {
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        static void run_TFS_SSH_Test()
+        {
+            const string vso_url = "ssh://grigoryanharutiun@grigoryanharutiun.visualstudio.com:22/_git/HarutTest";
+            const string passPhase = "";
+
+            var sshSessionFactory = new GitSessionFactorySSHCredentials();
+            sshSessionFactory.Passphase = passPhase;
+            sshSessionFactory.KeyPairPath = keyPairPath;
+
+            NGit.Transport.JschConfigSessionFactory.SetInstance(sshSessionFactory);
+
+            try
+            {
+                runTest(TfsSSHDir01, vso_url);
             }
             catch (JGitInternalException jGitInternalException)
             {
@@ -370,10 +397,11 @@ namespace GitSSHConnectionTest
 
             //runSSHTest();
             //run_VSO_SSH_Test();
+            run_TFS_SSH_Test();
 
-            runHTTPSTest();
-            run_VSO_HTTPS_Test();
-            run_TFS_HTTPS_Test();
+            //runHTTPSTest();
+            //run_VSO_HTTPS_Test();
+            //run_TFS_HTTPS_Test();
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
