@@ -69,32 +69,33 @@ namespace NGit.Transport
 		/// <returns>new authentication method to try.</returns>
 		internal static HttpAuthMethod ScanResponse(HttpURLConnection conn)
 		{
-			string hdr = conn.GetHeaderField(HttpSupport.HDR_WWW_AUTHENTICATE);
-			if (hdr == null || hdr.Length == 0)
+			string hdr_string = conn.GetHeaderField(HttpSupport.HDR_WWW_AUTHENTICATE);
+			if (hdr_string == null || hdr_string.Length == 0)
 			{
 				return NONE;
 			}
-			int sp = hdr.IndexOf(' ');
-			if (sp < 0)
-			{
-				return NONE;
-			}
-			string type = Sharpen.Runtime.Substring(hdr, 0, sp);
-			if (Sharpen.Runtime.EqualsIgnoreCase(HttpAuthMethod.Basic.NAME, type))
-			{
-				return new HttpAuthMethod.Basic();
-			}
-			else
-			{
-				if (Sharpen.Runtime.EqualsIgnoreCase(HttpAuthMethod.Digest.NAME, type))
-				{
-					return new HttpAuthMethod.Digest(Sharpen.Runtime.Substring(hdr, sp + 1));
-				}
-				else
-				{
-					return NONE;
-				}
-			}
+            string[] headers = hdr_string.Split(',');
+            foreach (string hdr in headers)
+            {
+			    int sp = hdr.IndexOf(' ');
+			    if (sp < 0)
+			    {
+				    continue;
+			    }
+                string type = Sharpen.Runtime.Substring(hdr, 0, sp);
+                if (Sharpen.Runtime.EqualsIgnoreCase(HttpAuthMethod.Basic.NAME, type))
+                {
+                    return new HttpAuthMethod.Basic();
+                }
+                else
+                {
+                    if (Sharpen.Runtime.EqualsIgnoreCase(HttpAuthMethod.Digest.NAME, type))
+                    {
+                        return new HttpAuthMethod.Digest(Sharpen.Runtime.Substring(hdr_string, sp + 1));
+                    }
+                }
+            }
+            return NONE;
 		}
 
 		/// <summary>Update this method with the credentials from the URIish.</summary>

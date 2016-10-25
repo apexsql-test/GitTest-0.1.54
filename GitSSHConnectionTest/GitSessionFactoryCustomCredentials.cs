@@ -30,13 +30,13 @@ namespace GitSSHConnectionTest
 		/// </summary>
 		/// <param name="login">The user login, for authentication on the server.</param>
 		/// <param name="passphrase">The user password, for authentication on the server.</param>
-        public GitSessionFactoryCustomCredentials(string login, string passphrase, bool useBasicHttpAuth = false)
+        public GitSessionFactoryCustomCredentials(string login, string passphrase)
 		{
 			m_login = login;
 			m_passphrase = passphrase;
 
 			// Setting credentials for http connection.
-            CredentialsProvider.SetDefault(new UsernamePasswordCredentialsProvider(m_login, m_passphrase, useBasicHttpAuth));
+            CredentialsProvider.SetDefault(new UsernamePasswordCredentialsProvider(m_login, m_passphrase));
 		}
 
 		/// <summary>

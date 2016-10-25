@@ -309,9 +309,11 @@ namespace GitSSHConnectionTest
                     throw new NullReferenceException();
                 }
 
-                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password, true));
+                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password));
                 //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
+
                 runTest(TfsDir01, tfs_url);
+  
             }
             catch (JGitInternalException jGitInternalException)
             {

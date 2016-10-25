@@ -545,17 +545,6 @@ namespace NGit.Transport
 						conn.SetRequestProperty(HttpSupport.HDR_ACCEPT, "*/*");
 					}
 
-                    CredentialsProvider credentialProvider = GetCredentialsProvider();
-                    UsernamePasswordCredentialsProvider usernamePasswordCredentialsProvider = credentialProvider as UsernamePasswordCredentialsProvider;
-                    if (null != usernamePasswordCredentialsProvider)
-                    {
-                        string basicAuthHeader = usernamePasswordCredentialsProvider.GetBasicAuthorizationHeader();
-                        if (null != basicAuthHeader)
-                        {
-                            conn.SetRequestProperty(HttpSupport.HDR_AUTHORIZATION, basicAuthHeader);
-                        }
-                    }
-
 					//$NON-NLS-1$
 					int status = HttpSupport.Response(conn);
 					switch (status)
