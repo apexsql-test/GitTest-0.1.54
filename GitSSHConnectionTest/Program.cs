@@ -26,12 +26,6 @@ namespace GitSSHConnectionTest
     {
         private static GitClient m_client;
         private static Credential m_vsoCredentials;
-        private const string keyPairPath = "C:\\Users\\Grigoryan\\.ssh";
-        private const string GitHubDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\github_db01";
-        private const string BitBucketDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\bitbucket_db01";
-        private const string VsoDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\vso_db1";
-        private const string TfsDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\\\Tests\\tfs_db1";
-        private const string TfsSSHDir01 = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Tests\\_git_tfs_ssh";
 
         const int TIMEOUT_IN_MILLISECONDS = 120000;
 
@@ -114,23 +108,23 @@ namespace GitSSHConnectionTest
             TryToClone(dir, url);
         }
 
-        static void runSSHTest()
+        static void runSSHTest(string url, string repo)
         {
-            const string github_url = "git@github.com:apexsql-test/test02.git";
-            const string bitbucket_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
-            const string passPhase = "";
+            string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string keyPairPath = userProfile + "\\.ssh";
+            string passPhase = "";
 
             var sshSessionFactory = new GitSessionFactorySSHCredentials();
             sshSessionFactory.Passphase = passPhase;
             sshSessionFactory.KeyPairPath = keyPairPath;
 
+            Directory.CreateDirectory(repo);
+
             NGit.Transport.JschConfigSessionFactory.SetInstance(sshSessionFactory);
 
             try
             {
-                runTest(GitHubDir01, github_url);
-                //runTest(GitHubDir02, github_url);
-                runTest(BitBucketDir01, bitbucket_url);
+                runTest(repo, url);
             }
             catch (JGitInternalException jGitInternalException)
             {
@@ -144,24 +138,38 @@ namespace GitSSHConnectionTest
             }
         }
 
-        static void runHTTPSTest()
+        static void run_GitHub_SSH_Test(string repo)
         {
-            const string github_login = "apexsql-test";
-            const string github_pswd = "apex_SQL01";
-            const string github_url = "https://github.com/apexsql-test/test02.git";
+            const string github_url = "git@github.com:apexsql-test/test02.git";
+            runSSHTest(github_url, repo);
+        }
 
-            const string bitbucket_login = "apexsql_test";
-            const string bitbucket_pswd = "apex_SQL";
-            const string bitbucket_url = "https://apexsql_test@bitbucket.org/apexsql_test/sql_test_04.git";
+        static void run_Bitbucket_SSH_Test(string repo)
+        {
+            const string bitbucket_url = "git@bitbucket.org:apexsql_test/sql_test_04.git";
+            runSSHTest(bitbucket_url, repo);
+        }
+
+        static void run_VSO_SSH_Test(string repo)
+        {
+            const string vso_url = "ssh://harut70@harut70.visualstudio.com:22/_git/ApexSQL%20VSO%20version";
+            runSSHTest(vso_url, repo);
+        }
+
+        static void run_TFS_SSH_Test(string repo)
+        {
+            const string tfs_url = "ssh://grigoryanharutiun@grigoryanharutiun.visualstudio.com:22/_git/HarutTest";
+            runSSHTest(tfs_url, repo);
+        }
+
+        static void runHTTPSTest(string repo, string url, string login, string pswd)
+        {
+            Directory.CreateDirectory(repo);
 
             try
             {
-                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(github_login, github_pswd));
-                runTest(GitHubDir01, github_url);
-                //runTest(GitHubDir02, github_url);
-
-                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(bitbucket_login, bitbucket_pswd));
-                runTest(BitBucketDir01, bitbucket_url);
+                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(login, pswd));
+                runTest(repo, url);
             }
             catch (JGitInternalException jGitInternalException)
             {
@@ -173,6 +181,127 @@ namespace GitSSHConnectionTest
                 ApexSql.Common.Logging.Logger.Exception(ex);
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        static void run_Github_HTTPS_Test(string repo)
+        {
+            const string github_login = "apexsql-test";
+            const string github_pswd = "apex_SQL01";
+            const string github_url = "https://github.com/apexsql-test/test02.git";
+
+            runHTTPSTest(repo, github_url, github_login, github_pswd);
+        }
+
+        static void run_Bitbucket_HTTPS_Test(string repo)
+        {
+            const string bitbucket_login = "apexsql_test";
+            const string bitbucket_pswd = "apex_SQL";
+            const string bitbucket_url = "https://apexsql_test@bitbucket.org/apexsql_test/sql_test_04.git";
+
+            runHTTPSTest(repo, bitbucket_url, bitbucket_login, bitbucket_pswd);
+        }
+
+        static void run_VSO_HTTPS_Test(string repo)
+        {
+            string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
+            TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
+            string username = "harut70";
+
+            m_vsoCredentials = null;
+
+            try
+            {
+                const string GIT_NAMESPACE = "git";
+                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
+                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
+
+                BaseAuthentication authority = BaseVstsAuthentication.GetAuthentication(target, VstsCredentialScope, secrets);
+
+                if (null == authority)
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (authority is VstsMsaAuthentication)
+                {
+                    GetVSOCredential(target, secrets, VstsCredentialScope);
+                }
+                else if (authority is VstsAadAuthentication)
+                {
+                    GetTFSCredential(target, secrets, VstsCredentialScope);
+                }
+
+                if (null == m_vsoCredentials)
+                {
+                    throw new NullReferenceException();
+                }
+
+                runHTTPSTest(repo, vso_url, username, m_vsoCredentials.Password);
+
+            }
+            catch (JGitInternalException jGitInternalException)
+            {
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+            }
+            catch (Exception ex)
+            {
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
+            }
+
+        }
+
+        static void run_TFS_HTTPS_Test(string repo)
+        {
+
+            TargetUri target = new TargetUri("https://grigoryanharutiun.visualstudio.com/");
+            string tfs_url = "https://grigoryanharutiun.visualstudio.com/DefaultCollection/_git/HarutTest";
+            string username = "grigoryanharutiun@milosdjosovicapexsql.onmicrosoft.com";
+
+            m_vsoCredentials = null;
+
+            try
+            {
+                const string GIT_NAMESPACE = "git";
+                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
+                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
+
+                BaseAuthentication authority =  BaseVstsAuthentication.GetAuthentication(target, VstsCredentialScope, secrets);
+
+                if (null == authority)
+                {
+                    throw new NullReferenceException();
+                }
+
+                if (authority is VstsMsaAuthentication)
+                {
+                    GetVSOCredential(target, secrets, VstsCredentialScope);
+                }
+                else if (authority is VstsAadAuthentication)
+                {
+                    GetTFSCredential(target, secrets, VstsCredentialScope);
+                }
+
+                if (null == m_vsoCredentials)
+                {
+                    throw new NullReferenceException();
+                }
+
+                runHTTPSTest(repo, tfs_url, username, m_vsoCredentials.Password);
+
+            }
+            catch (JGitInternalException jGitInternalException)
+            {
+                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
+                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
+            }
+            catch (Exception ex)
+            {
+                ApexSql.Common.Logging.Logger.Exception(ex);
+                Console.WriteLine(ex.Message);
+            }
+
         }
 
         static void GetVSOCredential(TargetUri target, SecretStore secrets, VstsTokenScope VstsCredentialScope)
@@ -217,176 +346,28 @@ namespace GitSSHConnectionTest
             }).Wait(TIMEOUT_IN_MILLISECONDS);
         }
 
-        static void run_VSO_HTTPS_Test()
-        {
-            string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
-            //TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
-            TargetUri target = new TargetUri("https://harut70.visualstudio.com/");
-            //string username = "harut70";
-
-            m_vsoCredentials = null;
-
-            try
-            {
-                const string GIT_NAMESPACE = "git";
-                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
-                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
-
-                BaseAuthentication authority = 
-                    BaseVstsAuthentication.GetAuthentication(target,
-                                                            VstsCredentialScope,
-                                                            secrets);
-                if (null == authority)
-                {
-                    throw new NullReferenceException();
-                }
-
-                if (authority is VstsMsaAuthentication)
-                {
-                    GetVSOCredential(target, secrets, VstsCredentialScope);
-                }
-                else if (authority is VstsAadAuthentication)
-                {
-                    GetTFSCredential(target, secrets, VstsCredentialScope);
-                }
-
-                if (null == m_vsoCredentials)
-                {
-                    throw new NullReferenceException();
-                }
-
-                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password));
-                //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
-                runTest(VsoDir01, vso_url);
-            }
-            catch (JGitInternalException jGitInternalException)
-            {
-                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
-                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
-            }
-            catch (Exception ex)
-            {
-                ApexSql.Common.Logging.Logger.Exception(ex);
-                Console.WriteLine(ex.Message);
-            }
-
-        }
-
-        static void run_TFS_HTTPS_Test()
-        {
-
-            string tfs_url = "https://grigoryanharutiun.visualstudio.com/DefaultCollection/_git/HarutTest";
-            TargetUri target = new TargetUri("https://grigoryanharutiun.visualstudio.com/");
-            //string username = "grigoryanharutiun@milosdjosovicapexsql.onmicrosoft.com";
-
-            m_vsoCredentials = null;
-
-            try
-            {
-                const string GIT_NAMESPACE = "git";
-                VstsTokenScope VstsCredentialScope = VstsTokenScope.CodeWrite | VstsTokenScope.PackagingRead;
-                var secrets = new SecretStore(GIT_NAMESPACE, null, null, Secret.UriToName);
-
-                BaseAuthentication authority =
-                    BaseVstsAuthentication.GetAuthentication(target,
-                                                            VstsCredentialScope,
-                                                            secrets);
-                if (null == authority)
-                {
-                    throw new NullReferenceException();
-                }
-
-                if (authority is VstsMsaAuthentication)
-                {
-                    GetVSOCredential(target, secrets, VstsCredentialScope);
-                }
-                else if (authority is VstsAadAuthentication)
-                {
-                    GetTFSCredential(target, secrets, VstsCredentialScope);
-                }
-
-                if (null == m_vsoCredentials)
-                {
-                    throw new NullReferenceException();
-                }
-
-                SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(m_vsoCredentials.Username, m_vsoCredentials.Password));
-                //SshSessionFactory.SetInstance(new GitSessionFactoryCustomCredentials(username, pswd));
-
-                runTest(TfsDir01, tfs_url);
-  
-            }
-            catch (JGitInternalException jGitInternalException)
-            {
-                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
-                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
-            }
-            catch (Exception ex)
-            {
-                ApexSql.Common.Logging.Logger.Exception(ex);
-                Console.WriteLine(ex.Message);
-            }
-
-        }
-
-        static void run_VSO_SSH_Test()
-        {
-            const string vso_url = "ssh://harut70@harut70.visualstudio.com:22/_git/ApexSQL%20VSO%20version";
-            const string passPhase = "";
-
-            var sshSessionFactory = new GitSessionFactorySSHCredentials();
-            sshSessionFactory.Passphase = passPhase;
-            sshSessionFactory.KeyPairPath = keyPairPath;
-
-            NGit.Transport.JschConfigSessionFactory.SetInstance(sshSessionFactory);
-
-            try
-            {
-                runTest(VsoDir01, vso_url);
-            }
-            catch (JGitInternalException jGitInternalException)
-            {
-                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
-                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
-            }
-            catch (Exception ex)
-            {
-                ApexSql.Common.Logging.Logger.Exception(ex);
-                Console.WriteLine(ex.Message);
-            }
-        }
-
-        static void run_TFS_SSH_Test()
-        {
-            const string vso_url = "ssh://grigoryanharutiun@grigoryanharutiun.visualstudio.com:22/_git/HarutTest";
-            const string passPhase = "";
-
-            var sshSessionFactory = new GitSessionFactorySSHCredentials();
-            sshSessionFactory.Passphase = passPhase;
-            sshSessionFactory.KeyPairPath = keyPairPath;
-
-            NGit.Transport.JschConfigSessionFactory.SetInstance(sshSessionFactory);
-
-            try
-            {
-                runTest(TfsSSHDir01, vso_url);
-            }
-            catch (JGitInternalException jGitInternalException)
-            {
-                ApexSql.Common.Logging.Logger.Exception(jGitInternalException);
-                Console.WriteLine(jGitInternalException.Message + "\r\n" + jGitInternalException.StackTrace);
-            }
-            catch (Exception ex)
-            {
-                ApexSql.Common.Logging.Logger.Exception(ex);
-                Console.WriteLine(ex.Message);
-            }
-        }
-
         static void Main(string[] args)
         {
-            const string LogFolder = "C:\\Users\\Grigoryan\\FreeLancing\\Freelancer.com\\Git engine\\Logs";
-            const string LogFile = "JSch.log";
+            string userAppData = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)).FullName;
+
+            string TestFolder = userAppData + "\\Test";
+            string LogFolder = userAppData + "\\Log";
+            string LogFile = "JSch.log";
+
+            string GithubHTTPSDir = TestFolder + "\\github_https";
+            string GithubSSHSDir = TestFolder + "\\github_ssh";
+
+            string BitbucketHTTPSDir = TestFolder + "\\bitbucket_https";
+            string BitbucketSSHSDir = TestFolder + "\\bitbucket_ssh";
+
+            string VsoHTTPSDir = TestFolder + "\\vso_https";
+            string VSOSSHDir = TestFolder + "\\vso_ssh";
+
+            string TfsHTTPSDir = TestFolder + "\\tfs_https";
+            string TfsSSHDir = TestFolder + "\\tfs_ssh";
+
+            Directory.CreateDirectory(TestFolder);
+            Directory.CreateDirectory(LogFolder);
 
             ApexSql.Common.Logging.Logger.LogFolder = LogFolder;
             ApexSql.Common.Logging.Logger.LogFileName = LogFile;
@@ -395,13 +376,19 @@ namespace GitSSHConnectionTest
 
             JSch.SetLogger(new JSchLogger());
 
-            //runSSHTest();
-            //run_VSO_SSH_Test();
-            run_TFS_SSH_Test();
+            // HTTPS test section
+            run_Github_HTTPS_Test(GithubHTTPSDir);
+            run_Bitbucket_HTTPS_Test(BitbucketHTTPSDir);
+            run_VSO_HTTPS_Test(VsoHTTPSDir);
+            run_TFS_HTTPS_Test(TfsHTTPSDir);
 
-            //runHTTPSTest();
-            //run_VSO_HTTPS_Test();
-            //run_TFS_HTTPS_Test();
+            // SSH test section
+            run_GitHub_SSH_Test(GithubSSHSDir);
+            run_Bitbucket_SSH_Test(BitbucketSSHSDir);
+            //run_VSO_SSH_Test(VSOSSHDir01);
+            //run_TFS_SSH_Test(TfsSSHDir01);
+
+
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
