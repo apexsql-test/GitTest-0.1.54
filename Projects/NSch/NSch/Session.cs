@@ -1427,6 +1427,10 @@ loop_break: ;
 							c.notifyme--;
 						}
 					}
+					if (in_kex)
+					{
+						continue;
+					}
 					if (c.rwsize >= length)
 					{
 						c.rwsize -= length;
@@ -1504,7 +1508,7 @@ loop_break: ;
 			long t = GetTimeout();
 			while (in_kex)
 			{
-				if (t > 0L && (Runtime.CurrentTimeMillis() - kex_start_time) > t)
+				if (t > 0L && (Runtime.CurrentTimeMillis() - kex_start_time) > t && !in_prompt)
 				{
 					throw new JSchException("timeout in waiting for rekeying process.");
 				}
@@ -1901,6 +1905,12 @@ loop_break: ;
 							if (t != null)
 							{
 								grr.SetReply(msgType == SSH_MSG_REQUEST_SUCCESS ? 1 : 0);
+								if (msgType == SSH_MSG_REQUEST_SUCCESS && grr.GetPort() == 0)
+								{
+									buf.GetInt();
+									buf.GetShort();
+									grr.SetPort(buf.GetInt());
+								}
 								t.Interrupt();
 							}
 							break;
@@ -2015,24 +2025,90 @@ loop_break: ;
 		}
 
 		//System.gc();
+		/// <summary>Registers the local port forwarding for loop-back interface.</summary>
+		/// <remarks>
+		/// Registers the local port forwarding for loop-back interface.
+		/// If <code>lport</code> is <code>0</code>, the tcp port will be allocated.
+		/// </remarks>
+		/// <param name="lport">local port for local port forwarding</param>
+		/// <param name="host">host address for local port forwarding</param>
+		/// <param name="rport">remote port number for local port forwarding</param>
+		/// <returns>an allocated local TCP port number</returns>
+		/// <seealso cref="setPortForwardingL(string, int, string, int, ServerSocketFactory, int)
+		/// 	"/>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual int SetPortForwardingL(int lport, string host, int rport)
 		{
 			return SetPortForwardingL("127.0.0.1", lport, host, rport);
 		}
 
+		/// <summary>Registers the local port forwarding.</summary>
+		/// <remarks>
+		/// Registers the local port forwarding.  If <code>bind_address</code> is an empty string
+		/// or '*', the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or
+		/// <code>null</code>, the listening port will be bound for local use only.
+		/// If <code>lport</code> is <code>0</code>, the tcp port will be allocated.
+		/// </remarks>
+		/// <param name="bind_address">bind address for local port forwarding</param>
+		/// <param name="lport">local port for local port forwarding</param>
+		/// <param name="host">host address for local port forwarding</param>
+		/// <param name="rport">remote port number for local port forwarding</param>
+		/// <returns>an allocated local TCP port number</returns>
+		/// <seealso cref="setPortForwardingL(string, int, string, int, ServerSocketFactory, int)
+		/// 	"/>
 		/// <exception cref="NSch.JSchException"/>
-		public virtual int SetPortForwardingL(string boundaddress, int lport, string host
-			, int rport)
+		public virtual int SetPortForwardingL(string bind_address, int lport, string host, int rport)
 		{
-			return SetPortForwardingL(boundaddress, lport, host, rport, null);
+			return SetPortForwardingL(bind_address, lport, host, rport, null);
 		}
 
+		/// <summary>Registers the local port forwarding.</summary>
+		/// <remarks>
+		/// Registers the local port forwarding.
+		/// If <code>bind_address</code> is an empty string or <code>"*"</code>,
+		/// the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or
+		/// <code>null</code>, the listening port will be bound for local use only.
+		/// If <code>lport</code> is <code>0</code>, the tcp port will be allocated.
+		/// </remarks>
+		/// <param name="bind_address">bind address for local port forwarding</param>
+		/// <param name="lport">local port for local port forwarding</param>
+		/// <param name="host">host address for local port forwarding</param>
+		/// <param name="rport">remote port number for local port forwarding</param>
+		/// <param name="ssf">socket factory</param>
+		/// <returns>an allocated local TCP port number</returns>
+		/// <seealso cref="setPortForwardingL(string, int, string, int, ServerSocketFactory, int)
+		/// 	"/>
 		/// <exception cref="NSch.JSchException"/>
-		public virtual int SetPortForwardingL(string boundaddress, int lport, string host
+		public virtual int SetPortForwardingL(string bind_address, int lport, string host
 			, int rport, ServerSocketFactory ssf)
 		{
-			PortWatcher pw = PortWatcher.AddPort(this, boundaddress, lport, host, rport, ssf);
+			return SetPortForwardingL(bind_address, lport, host, rport, ssf, 0);
+		}
+
+		/// <summary>Registers the local port forwarding.</summary>
+		/// <remarks>
+		/// Registers the local port forwarding.
+		/// If <code>bind_address</code> is an empty string
+		/// or <code>"*"</code>, the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or
+		/// <code>null</code>, the listening port will be bound for local use only.
+		/// If <code>lport</code> is <code>0</code>, the tcp port will be allocated.
+		/// </remarks>
+		/// <param name="bind_address">bind address for local port forwarding</param>
+		/// <param name="lport">local port for local port forwarding</param>
+		/// <param name="host">host address for local port forwarding</param>
+		/// <param name="rport">remote port number for local port forwarding</param>
+		/// <param name="ssf">socket factory</param>
+		/// <param name="connectTimeout">timeout for establishing port connection</param>
+		/// <returns>an allocated local TCP port number</returns>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual int SetPortForwardingL(string bind_address, int lport, string host
+			, int rport, ServerSocketFactory ssf, int connectTimeout)
+		{
+			PortWatcher pw = PortWatcher.AddPort(this, bind_address, lport, host, rport, ssf);
+			//pw.SetConnectTimeout(connectTimeout);
 			Sharpen.Thread tmp = new Sharpen.Thread(pw);
 			tmp.SetName("PortWatcher Thread for " + host);
 			if (daemon_thread)
@@ -2043,30 +2119,66 @@ loop_break: ;
 			return pw.lport;
 		}
 
+		/// <summary>
+		/// Cancels the local port forwarding assigned
+		/// at local TCP port <code>lport</code> on loopback interface.
+		/// </summary>
+		/// <param name="lport">local TCP port</param>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void DelPortForwardingL(int lport)
 		{
 			DelPortForwardingL("127.0.0.1", lport);
 		}
 
+		/// <summary>
+		/// Cancels the local port forwarding assigned
+		/// at local TCP port <code>lport</code> on <code>bind_address</code> interface.
+		/// </summary>
+		/// <param name="bind_address">bind_address of network interfaces</param>
+		/// <param name="lport">local TCP port</param>
 		/// <exception cref="NSch.JSchException"/>
-		public virtual void DelPortForwardingL(string boundaddress, int lport)
+		public virtual void DelPortForwardingL(string bind_address, int lport)
 		{
-			PortWatcher.DelPort(this, boundaddress, lport);
+			PortWatcher.DelPort(this, bind_address, lport);
 		}
 
+		/// <summary>Lists the registered local port forwarding.</summary>
+		/// <returns>a list of "lport:host:hostport"</returns>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual string[] GetPortForwardingL()
 		{
 			return PortWatcher.GetPortForwarding(this);
 		}
 
+		/// <summary>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// </summary>
+		/// <param name="rport">remote port</param>
+		/// <param name="host">host address</param>
+		/// <param name="lport">local port</param>
+		/// <seealso cref="setPortForwardingR(string, int, string, int, SocketFactory)"/>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string host, int lport)
 		{
 			SetPortForwardingR(null, rport, host, lport, (SocketFactory)null);
 		}
 
+		/// <summary>Registers the remote port forwarding.</summary>
+		/// <remarks>
+		/// Registers the remote port forwarding.
+		/// If <code>bind_address</code> is an empty string or <code>"*"</code>,
+		/// the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or is not given,
+		/// the listening port will be bound for local use only.
+		/// Note that if <code>GatewayPorts</code> is <code>"no"</code> on the
+		/// remote, <code>"localhost"</code> is always used as a bind_address.
+		/// </remarks>
+		/// <param name="bind_address">bind address</param>
+		/// <param name="rport">remote port</param>
+		/// <param name="host">host address</param>
+		/// <param name="lport">local port</param>
+		/// <seealso cref="setPortForwardingR(string, int, string, int, SocketFactory)"/>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(string bind_address, int rport, string host
 			, int lport)
@@ -2074,6 +2186,15 @@ loop_break: ;
 			SetPortForwardingR(bind_address, rport, host, lport, (SocketFactory)null);
 		}
 
+		/// <summary>
+		/// Registers the remote port forwarding for the loopback interface
+		/// of the remote.
+		/// </summary>
+		/// <param name="rport">remote port</param>
+		/// <param name="host">host address</param>
+		/// <param name="lport">local port</param>
+		/// <param name="sf">socket factory</param>
+		/// <seealso cref="setPortForwardingR(string, int, string, int, SocketFactory)"/>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetPortForwardingR(int rport, string host, int lport, SocketFactory
 			 sf)
@@ -2099,7 +2220,8 @@ loop_break: ;
 		/// <param name="lport">local port</param>
 		/// <param name="sf">socket factory</param>
 		/// <exception cref="NSch.JSchException"/>
-		public virtual void SetPortForwardingR(string bind_address, int rport, string host, int lport, SocketFactory sf)
+		public virtual void SetPortForwardingR(string bind_address, int rport, string host
+			, int lport, SocketFactory sf)
 		{
 			int allocated = SetPortForwarding(bind_address, rport);
 			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, allocated, host, lport, sf);
