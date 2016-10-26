@@ -385,10 +385,8 @@ namespace GitSSHConnectionTest
             // SSH test section
             run_GitHub_SSH_Test(GithubSSHSDir);
             run_Bitbucket_SSH_Test(BitbucketSSHSDir);
-            //run_VSO_SSH_Test(VSOSSHDir01);
-            //run_TFS_SSH_Test(TfsSSHDir01);
-
-
+            run_VSO_SSH_Test(VSOSSHDir);
+            run_TFS_SSH_Test(TfsSSHDir);
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
