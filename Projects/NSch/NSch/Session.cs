@@ -2223,7 +2223,7 @@ loop_break: ;
 		public virtual void SetPortForwardingR(string bind_address, int rport, string host
 			, int lport, SocketFactory sf)
 		{
-			int allocated = SetPortForwarding(bind_address, rport);
+			int allocated = _setPortForwardingR(bind_address, rport);
 			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, allocated, host, lport, sf);
 		}
 
@@ -2290,10 +2290,178 @@ loop_break: ;
 		/// <param name="arg">arguments for "daemon"</param>
 		/// <seealso cref="SetPortForwardingR(string, int, string, object[])"/>
 		/// <exception cref="NSch.JSchException"/>
-		public virtual void SetPortForwardingR(string bind_address, int rport, string daemon, object[] arg)
+		public virtual void SetPortForwardingR(string bind_address, int rport, string daemon
+			, object[] arg)
 		{
-			int allocated = SetPortForwarding(bind_address, rport);
+			int allocated = _setPortForwardingR(bind_address, rport);
 			ChannelForwardedTCPIP.AddPort(this, bind_address, rport, allocated, daemon, arg);
+		}
+
+		/// <summary>Lists the registered remote port forwarding.</summary>
+		/// <returns>a list of "rport:host:hostport"</returns>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual string[] GetPortForwardingR()
+		{
+			return ChannelForwardedTCPIP.GetPortForwarding(this);
+		}
+
+		private class Forwarding
+		{
+			internal string bind_address = null;
+
+			internal int port = -1;
+
+			internal string host = null;
+
+			internal int hostport = -1;
+
+			internal Forwarding(Session _enclosing)
+			{
+				this._enclosing = _enclosing;
+			}
+
+			private readonly Session _enclosing;
+		}
+
+		/// <summary>
+		/// The given argument may be "[bind_address:]port:host:hostport" or
+		/// "[bind_address:]port host:hostport", which is from LocalForward command of
+		/// ~/.ssh/config .
+		/// </summary>
+		/// <exception cref="NSch.JSchException"/>
+		private Session.Forwarding ParseForwarding(string conf)
+		{
+			string[] tmp = conf.Split(" ");
+			if (tmp.Length > 1)
+			{
+				// "[bind_address:]port host:hostport"
+				ArrayList foo = new ArrayList();
+				for (int i = 0; i < tmp.Length; i++)
+				{
+					if (tmp[i].Length == 0)
+					{
+						continue;
+					}
+					foo.Add(tmp[i].Trim());
+				}
+				StringBuilder sb = new StringBuilder();
+				// join
+				for (int i_1 = 0; i_1 < foo.Count; i_1++)
+				{
+					sb.Append((string)(foo[i_1]));
+					if (i_1 + 1 < foo.Count)
+					{
+						sb.Append(":");
+					}
+				}
+				conf = sb.ToString();
+			}
+			string org = conf;
+			Session.Forwarding f = new Session.Forwarding(this);
+			try
+			{
+				if (conf.LastIndexOf(":") == -1)
+				{
+					throw new JSchException("parseForwarding: " + org);
+				}
+				f.hostport = System.Convert.ToInt32(Sharpen.Runtime.Substring(conf, conf.LastIndexOf
+					(":") + 1));
+				conf = Sharpen.Runtime.Substring(conf, 0, conf.LastIndexOf(":"));
+				if (conf.LastIndexOf(":") == -1)
+				{
+					throw new JSchException("parseForwarding: " + org);
+				}
+				f.host = Sharpen.Runtime.Substring(conf, conf.LastIndexOf(":") + 1);
+				conf = Sharpen.Runtime.Substring(conf, 0, conf.LastIndexOf(":"));
+				if (conf.LastIndexOf(":") != -1)
+				{
+					f.port = System.Convert.ToInt32(Sharpen.Runtime.Substring(conf, conf.LastIndexOf(
+						":") + 1));
+					conf = Sharpen.Runtime.Substring(conf, 0, conf.LastIndexOf(":"));
+					if (conf.Length == 0 || conf.Equals("*"))
+					{
+						conf = "0.0.0.0";
+					}
+					if (conf.Equals("localhost"))
+					{
+						conf = "127.0.0.1";
+					}
+					f.bind_address = conf;
+				}
+				else
+				{
+					f.port = System.Convert.ToInt32(conf);
+					f.bind_address = "127.0.0.1";
+				}
+			}
+			catch (FormatException e)
+			{
+				throw new JSchException("parseForwarding: " + e.ToString());
+			}
+			return f;
+		}
+
+		/// <summary>Registers the local port forwarding.</summary>
+		/// <remarks>
+		/// Registers the local port forwarding.  The argument should be
+		/// in the format like "[bind_address:]port:host:hostport".
+		/// If <code>bind_address</code> is an empty string or <code>"*"</code>,
+		/// the port should be available from all interfaces.
+		/// If <code>bind_address</code> is <code>"localhost"</code> or is not given,
+		/// the listening port will be bound for local use only.
+		/// </remarks>
+		/// <param name="conf">configuration of local port forwarding</param>
+		/// <returns>an assigned port number</returns>
+		/// <seealso cref="setPortForwardingL(string, int, string, int)"/>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual int SetPortForwardingL(string conf)
+		{
+			Session.Forwarding f = ParseForwarding(conf);
+			return SetPortForwardingL(f.bind_address, f.port, f.host, f.hostport);
+		}
+
+		/// <summary>Registers the remote port forwarding.</summary>
+		/// <remarks>
+		/// Registers the remote port forwarding.  The argument should be
+		/// in the format like "[bind_address:]port:host:hostport".  If the
+		/// bind_address is not given, the default is to only bind to loopback
+		/// addresses.  If the bind_address is <code>"*"</code> or an empty string,
+		/// then the forwarding is requested to listen on all interfaces.
+		/// Note that if <code>GatewayPorts</code> is <code>"no"</code> on the remote,
+		/// <code>"localhost"</code> is always used for bind_address.
+		/// If the specified remote is <code>"0"</code>,
+		/// the TCP port will be allocated on the remote.
+		/// </remarks>
+		/// <param name="conf">configuration of remote port forwarding</param>
+		/// <returns>an allocated TCP port on the remote.</returns>
+		/// <seealso cref="setPortForwardingR(string, int, string, int)"/>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual int setPortForwardingR(string conf)
+		{
+			Session.Forwarding f = ParseForwarding(conf);
+			int allocated = _setPortForwardingR(f.bind_address, f.port);
+			ChannelForwardedTCPIP.AddPort(this, f.bind_address, f.port, allocated, f.host, f.
+				hostport, null);
+			return allocated;
+		}
+
+		/// <summary>Instantiates an instance of stream-forwarder to <code>host</code>:<code>port</code>.
+		/// 	</summary>
+		/// <remarks>
+		/// Instantiates an instance of stream-forwarder to <code>host</code>:<code>port</code>.
+		/// Set I/O stream to the given channel, and then invoke Channel#connect() method.
+		/// </remarks>
+		/// <param name="host">remote host, which the given stream will be plugged to.</param>
+		/// <param name="port">remote port, which the given stream will be plugged to.</param>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual Channel GetStreamForwarder(string host, int port)
+		{
+			ChannelDirectTCPIP channel = new ChannelDirectTCPIP();
+			channel.Init();
+			this.AddChannel(channel);
+			channel.SetHost(host);
+			channel.SetPort(port);
+			return channel;
 		}
 
 		private class GlobalRequestReply
@@ -2346,7 +2514,7 @@ loop_break: ;
 		private Session.GlobalRequestReply grr;
 
 		/// <exception cref="NSch.JSchException"/>
-		private int SetPortForwarding(string bind_address, int rport)
+		private int _setPortForwardingR(string bind_address, int rport)
 		{
 			lock (grr)
 			{
