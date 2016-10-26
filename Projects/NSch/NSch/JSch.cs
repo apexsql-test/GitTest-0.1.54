@@ -169,13 +169,49 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Instantiates the <code>Session</code> object with
+		/// <code>username</code> and <code>host</code>.
+		/// </summary>
+		/// <remarks>
+		/// Instantiates the <code>Session</code> object with
+		/// <code>username</code> and <code>host</code>.
+		/// The TCP port 22 will be used in making the connection.
+		/// Note that the TCP connection must not be established
+		/// until Session#connect().
+		/// </remarks>
+		/// <param name="username">user name</param>
+		/// <param name="host">hostname</param>
+		/// <exception cref="JSchException">if <code>username</code> or <code>host</code> are invalid.
+		/// 	</exception>
+		/// <returns>the instance of <code>Session</code> class.</returns>
+		/// <seealso cref="getSession(string, string, int)"/>
+		/// <seealso cref="Session"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual Session GetSession(string username, string host)
 		{
 			return GetSession(username, host, 22);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Instantiates the <code>Session</code> object with given
+		/// <code>username</code>, <code>host</code> and <code>port</code>.
+		/// </summary>
+		/// <remarks>
+		/// Instantiates the <code>Session</code> object with given
+		/// <code>username</code>, <code>host</code> and <code>port</code>.
+		/// Note that the TCP connection must not be established
+		/// until Session#connect().
+		/// </remarks>
+		/// <param name="username">user name</param>
+		/// <param name="host">hostname</param>
+		/// <param name="port">port number</param>
+		/// <exception cref="JSchException">if <code>username</code> or <code>host</code> are invalid.
+		/// 	</exception>
+		/// <returns>the instance of <code>Session</code> class.</returns>
+		/// <seealso cref="getSession(string, string, int)"/>
+		/// <seealso cref="Session"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual Session GetSession(string username, string host, int port)
 		{
 			if (username == null)
@@ -209,12 +245,23 @@ namespace NSch
 			}
 		}
 
+		/// <summary>Sets the hostkey repository.</summary>
+		/// <param name="hkrepo"/>
+		/// <seealso cref="HostKeyRepository"/>
+		/// <seealso cref="KnownHosts"/>
 		public virtual void SetHostKeyRepository(HostKeyRepository hkrepo)
 		{
 			known_hosts = hkrepo;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the instance of <code>KnownHosts</code>, which refers
+		/// to <code>filename</code>.
+		/// </summary>
+		/// <param name="filename">filename of known_hosts file.</param>
+		/// <exception cref="JSchException">if the given filename is invalid.</exception>
+		/// <seealso cref="KnownHosts"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetKnownHosts(string filename)
 		{
 			if (known_hosts == null)
@@ -230,7 +277,14 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the instance of <code>KnownHosts</code> generated with
+		/// <code>stream</code>.
+		/// </summary>
+		/// <param name="stream">the instance of InputStream from known_hosts file.</param>
+		/// <exception cref="JSchException">if an I/O error occurs.</exception>
+		/// <seealso cref="KnownHosts"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetKnownHosts(InputStream stream)
 		{
 			if (known_hosts == null)
@@ -246,6 +300,14 @@ namespace NSch
 			}
 		}
 
+		/// <summary>Returns the current hostkey repository.</summary>
+		/// <remarks>
+		/// Returns the current hostkey repository.
+		/// By the default, this method will the instance of <code>KnownHosts</code>.
+		/// </remarks>
+		/// <returns>current hostkey repository.</returns>
+		/// <seealso cref="HostKeyRepository"/>
+		/// <seealso cref="KnownHosts"/>
 		public virtual HostKeyRepository GetHostKeyRepository()
 		{
 			if (known_hosts == null)
@@ -255,13 +317,34 @@ namespace NSch
 			return known_hosts;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <param name="prvkey">filename of the private key.</param>
+		/// <exception cref="JSchException">if <code>prvkey</code> is invalid.</exception>
+		/// <seealso cref="addIdentity(string, string)"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void AddIdentity(string prvkey)
 		{
 			AddIdentity(prvkey, (byte[])null);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// Before registering it into identityRepository,
+		/// it will be deciphered with <code>passphrase</code>.
+		/// </remarks>
+		/// <param name="prvkey">filename of the private key.</param>
+		/// <param name="passphrase">passphrase for <code>prvkey</code>.</param>
+		/// <exception cref="JSchException">if <code>passphrase</code> is not right.</exception>
+		/// <seealso cref="addIdentity(string, byte[])"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void AddIdentity(string prvkey, string passphrase)
 		{
 			byte[] _passphrase = null;
@@ -276,29 +359,86 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// Before registering it into identityRepository,
+		/// it will be deciphered with <code>passphrase</code>.
+		/// </remarks>
+		/// <param name="prvkey">filename of the private key.</param>
+		/// <param name="passphrase">passphrase for <code>prvkey</code>.</param>
+		/// <exception cref="JSchException">if <code>passphrase</code> is not right.</exception>
+		/// <seealso cref="addIdentity(string, string, byte[])"/>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void AddIdentity(string prvkey, byte[] passphrase)
 		{
 			Identity identity = IdentityFile.NewInstance(prvkey, null, this);
 			AddIdentity(identity, passphrase);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// Before registering it into identityRepository,
+		/// it will be deciphered with <code>passphrase</code>.
+		/// </remarks>
+		/// <param name="prvkey">filename of the private key.</param>
+		/// <param name="pubkey">filename of the public key.</param>
+		/// <param name="passphrase">passphrase for <code>prvkey</code>.</param>
+		/// <exception cref="JSchException">if <code>passphrase</code> is not right.</exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void AddIdentity(string prvkey, string pubkey, byte[] passphrase)
 		{
 			Identity identity = IdentityFile.NewInstance(prvkey, pubkey, this);
 			AddIdentity(identity, passphrase);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
-		public virtual void AddIdentity(string name, byte[] prvkey, byte[] pubkey, byte[]
-			 passphrase)
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// Before registering it into identityRepository,
+		/// it will be deciphered with <code>passphrase</code>.
+		/// </remarks>
+		/// <param name="name">
+		/// name of the identity to be used to
+		/// retrieve it in the identityRepository.
+		/// </param>
+		/// <param name="prvkey">private key in byte array.</param>
+		/// <param name="pubkey">public key in byte array.</param>
+		/// <param name="passphrase">passphrase for <code>prvkey</code>.</param>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual void AddIdentity(string name, byte[] prvkey, byte[] pubkey, byte[] passphrase)
 		{
 			Identity identity = IdentityFile.NewInstance(name, prvkey, pubkey, this);
 			AddIdentity(identity, passphrase);
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the private key, which will be referred in
+		/// the public key authentication.
+		/// Before registering it into identityRepository,
+		/// it will be deciphered with <code>passphrase</code>.
+		/// </remarks>
+		/// <param name="identity">private key.</param>
+		/// <param name="passphrase">passphrase for <code>identity</code>.</param>
+		/// <exception cref="JSchException">if <code>passphrase</code> is not right.</exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void AddIdentity(Identity identity, byte[] passphrase)
 		{
 			if (passphrase != null)
@@ -321,8 +461,7 @@ namespace NSch
 			}
 		}
 
-		// TODO
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <exception cref="NSch.JSchException"/>
 		[System.ObsoleteAttribute(@"use JSch#removeIdentity(Identity identity)")]
 		public virtual void RemoveIdentity(string name)
 		{
@@ -339,13 +478,19 @@ namespace NSch
 			}
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>Removes the identity from identityRepository.</summary>
+		/// <param name="identity">the indentity to be removed.</param>
+		/// <exception cref="JSchException">if <code>identity</code> is invalid.</exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void RemoveIdentity(Identity identity)
 		{
 			identityRepository.Remove(identity.GetPublicKeyBlob());
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>Lists names of identities included in the identityRepository.</summary>
+		/// <returns>names of identities</returns>
+		/// <exception cref="JSchException">if identityReposory has problems.</exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual ArrayList GetIdentityNames()
 		{
 			ArrayList foo = new ArrayList();
@@ -358,12 +503,17 @@ namespace NSch
 			return foo;
 		}
 
-		/// <exception cref="NSch.JSchException"></exception>
+		/// <summary>Removes all identities from identityRepository.</summary>
+		/// <exception cref="JSchException">if identityReposory has problems.</exception>
+		/// <exception cref="NSch.JSchException"/>
 		public virtual void RemoveAllIdentity()
 		{
 			identityRepository.RemoveAll();
 		}
 
+		/// <summary>Returns the config value for the specified key.</summary>
+		/// <param name="key">key for the configuration.</param>
+		/// <returns>config value</returns>
 		public static string GetConfig(string key)
 		{
 			lock (config)
@@ -377,6 +527,8 @@ namespace NSch
 			}
 		}
 
+		/// <summary>Sets or Overrides the configuration.</summary>
+		/// <param name="newconf">configurations</param>
 		public static void SetConfig(Hashtable newconf)
 		{
 			lock (config)
@@ -389,11 +541,17 @@ namespace NSch
 			}
 		}
 
+		/// <summary>Sets or Overrides the configuration.</summary>
+		/// <param name="key">key for the configuration</param>
+		/// <param name="value">value for the configuration</param>
 		public static void SetConfig(string key, string value)
 		{
 			config.Put(key, value);
 		}
 
+		/// <summary>Sets the logger</summary>
+		/// <param name="logger">logger</param>
+		/// <seealso cref="Logger"/>
 		public static void SetLogger(Logger logger)
 		{
 			if (logger == null)
