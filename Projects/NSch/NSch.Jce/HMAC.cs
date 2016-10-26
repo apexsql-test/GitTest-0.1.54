@@ -84,7 +84,7 @@ namespace NSch.Jce
 			}
 			catch (ShortBufferException e)
 			{
-                System.Console.Error.WriteLine(e);
+				System.Console.Error.WriteLine(e);
 			}
 		}
 

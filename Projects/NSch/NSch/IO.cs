@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2006-2010 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2016 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -83,41 +83,41 @@ namespace NSch
 			SetInputStream(@in);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
-		/// <exception cref="System.Net.Sockets.SocketException"></exception>
+		/// <exception cref="System.IO.IOException"/>
+		/// <exception cref="System.Net.Sockets.SocketException"/>
 		public virtual void Put(Packet p)
 		{
 			@out.Write(p.buffer.buffer, 0, p.buffer.index);
 			@out.Flush();
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal virtual void Put(byte[] array, int begin, int length)
 		{
 			@out.Write(array, begin, length);
 			@out.Flush();
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal virtual void Put_ext(byte[] array, int begin, int length)
 		{
 			out_ext.Write(array, begin, length);
 			out_ext.Flush();
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal virtual int GetByte()
 		{
 			return @in.Read();
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal virtual void GetByte(byte[] array)
 		{
 			GetByte(array, 0, array.Length);
 		}
 
-		/// <exception cref="System.IO.IOException"></exception>
+		/// <exception cref="System.IO.IOException"/>
 		internal virtual void GetByte(byte[] array, int begin, int length)
 		{
 			do

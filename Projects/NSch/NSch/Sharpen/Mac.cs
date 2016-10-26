@@ -40,6 +40,7 @@ namespace Sharpen
 			switch (name.ToUpper ()) {
 			case "HMACMD5": m.mac = new HMACMD5 (); break;
 			case "HMACSHA1": m.mac = new HMACSHA1 (); break;
+            case "HMACSHA256": m.mac = new HMACSHA256(); break;
 			}
 			if (m.mac == null)
 				throw new NotSupportedException ();
