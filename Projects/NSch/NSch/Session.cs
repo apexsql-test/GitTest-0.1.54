@@ -191,6 +191,10 @@ namespace NSch
 
 		private int serverAliveCountMax = 1;
 
+		private IdentityRepository identityRepository = null;
+
+		private HostKeyRepository hostkeyRepository = null;
+
 		protected internal bool daemon_thread = false;
 
 		private long kex_start_time = 0L;
@@ -407,11 +411,16 @@ namespace NSch
 				}
 				try
 				{
+					long tmp = Runtime.CurrentTimeMillis();
+					in_prompt = true;
 					CheckHost(host, port, kex);
+					in_prompt = false;
+					kex_start_time += (Runtime.CurrentTimeMillis() - tmp);
 				}
 				catch (JSchException ee)
 				{
 					in_kex = false;
+					in_prompt = false;
 					throw;
 				}
 				Send_newkeys();
@@ -557,9 +566,18 @@ namespace NSch
 							{
 								throw;
 							}
-							catch (Exception)
+							catch (JSchException ee)
+							{
+								throw;
+							}
+							catch (Exception ee)
 							{
 								//System.err.println("ee: "+ee); // SSH_MSG_DISCONNECT: 2 Too many authentication failures
+								if (JSch.GetLogger().IsEnabled(Logger.WARN))
+								{
+									JSch.GetLogger().Log(Logger.WARN, "an exception during authentication\n"
+										 + ee.ToString());
+								}
 								goto loop_break;
 							}
 						}
@@ -583,7 +601,7 @@ loop_break: ;
 					}
 					throw new JSchException("Auth fail");
 				}
-				if (connectTimeout > 0 || timeout > 0)
+				if (socket != null && (connectTimeout > 0 || timeout > 0))
 				{
 					socket.ReceiveTimeout = timeout;
 				}
@@ -608,21 +626,29 @@ loop_break: ;
 				// The session has been already down and
 				// we don't have to start new thread.
 				in_kex = false;
-				if (isConnected)
+				try
 				{
-					try
+					if (isConnected)
 					{
+						string message = e.ToString();
 						packet.Reset();
+						buf.CheckFreeSize(1 + 4 * 3 + message.Length + 2 + buffer_margin);
 						buf.PutByte(unchecked((byte)SSH_MSG_DISCONNECT));
 						buf.PutInt(3);
-						buf.PutString(Util.Str2byte(e.ToString()));
+						buf.PutString(Util.Str2byte(message));
 						buf.PutString(Util.Str2byte("en"));
 						Write(packet);
-						Disconnect();
 					}
-					catch (Exception)
-					{
-					}
+				}
+				catch (Exception)
+				{
+				}
+				try
+				{
+					Disconnect();
+				}
+				catch (Exception)
+				{
 				}
 				isConnected = false;
 				//e.printStackTrace();
@@ -689,7 +715,9 @@ loop_break: ;
 			return kex;
 		}
 
-		private bool in_kex = false;
+		private volatile bool in_kex = false;
+
+		private volatile bool in_prompt = false;
 
 		/// <exception cref="System.Exception"/>
 		public virtual void Rekey()
@@ -726,6 +754,18 @@ loop_break: ;
 					throw new JSchException("There are not any available kexes.");
 				}
 			}
+#if false
+			string server_host_key = getConfig("server_host_key");
+			string[] not_available_shks = checkSignatures(getConfig("CheckSignatures"));
+			if (not_available_shks != null && not_available_shks.Length > 0)
+			{
+				server_host_key = Util.diffString(server_host_key, not_available_shks);
+				if (server_host_key == null)
+				{
+					throw new JSchException("There are not any available sig algorithm.");
+				}
+			}
+#endif
 			in_kex = true;
 			kex_start_time = Runtime.CurrentTimeMillis();
 			// byte      SSH_MSG_KEXINIT(20)
@@ -802,8 +842,16 @@ loop_break: ;
 			{
 				chost = ("[" + chost + "]:" + port);
 			}
-			//    hostkey=new HostKey(chost, K_S);
 			HostKeyRepository hkr = jsch.GetHostKeyRepository();
+			string hkh = GetConfig("HashKnownHosts");
+			if (hkh.Equals("yes") && (hkr is KnownHosts))
+			{
+				hostkey = ((KnownHosts)hkr).CreateHashedHostKey(chost, K_S);
+			}
+			else
+			{
+				hostkey = new HostKey(chost, K_S);
+			}
 			int i = 0;
 			lock (hkr)
 			{
@@ -894,17 +942,8 @@ loop_break: ;
 			}
 			if (insert && JSch.GetLogger().IsEnabled(Logger.WARN))
 			{
-				JSch.GetLogger().Log(Logger.WARN, "Permanently added '" + host + "' (" + key_type
-					 + ") to the list of known hosts.");
-			}
-			string hkh = GetConfig("HashKnownHosts");
-			if (hkh.Equals("yes") && (hkr is KnownHosts))
-			{
-				hostkey = ((KnownHosts)hkr).CreateHashedHostKey(chost, K_S);
-			}
-			else
-			{
-				hostkey = new HostKey(chost, K_S);
+				JSch.GetLogger().Log(Logger.WARN, "Permanently added '" + host + "' (" +
+					 key_type + ") to the list of known hosts.");
 			}
 			if (insert)
 			{
@@ -928,6 +967,10 @@ loop_break: ;
 				Channel channel = Channel.GetChannel(type);
 				AddChannel(channel);
 				channel.Init();
+				if (channel is ChannelSession)
+				{
+					//applyConfigChannel((ChannelSession)channel);
+				}
 				return channel;
 			}
 			catch (Exception)
@@ -1264,6 +1307,7 @@ loop_break: ;
 				method = guess[KeyExchange.PROPOSAL_MAC_ALGS_STOC];
 				c = Sharpen.Runtime.GetType(GetConfig(method));
 				s2cmac = (MAC)(System.Activator.CreateInstance(c));
+				MACs2c = ExpandKey(buf, K, H, MACs2c, hash, s2cmac.GetBlockSize());
 				s2cmac.Init(MACs2c);
 				//mac_buf=new byte[s2cmac.getBlockSize()];
 				s2cmac_result1 = new byte[s2cmac.GetBlockSize()];
@@ -1289,6 +1333,7 @@ loop_break: ;
 				method = guess[KeyExchange.PROPOSAL_MAC_ALGS_CTOS];
 				c = Sharpen.Runtime.GetType(GetConfig(method));
 				c2smac = (MAC)(System.Activator.CreateInstance(c));
+				MACc2s = ExpandKey(buf, K, H, MACc2s, hash, c2smac.GetBlockSize());
 				c2smac.Init(MACc2s);
 				method = guess[KeyExchange.PROPOSAL_COMP_ALGS_CTOS];
 				InitDeflater(method);
@@ -1306,6 +1351,44 @@ loop_break: ;
 		}
 
 		//System.err.println("updatekeys: "+e); 
+  /*
+   * RFC 4253  7.2. Output from Key Exchange
+   * If the key length needed is longer than the output of the HASH, the
+   * key is extended by computing HASH of the concatenation of K and H and
+   * the entire key so far, and appending the resulting bytes (as many as
+   * HASH generates) to the key.  This process is repeated until enough
+   * key material is available; the key is taken from the beginning of
+   * this value.  In other words:
+   *   K1 = HASH(K || H || X || session_id)   (X is e.g., "A")
+   *   K2 = HASH(K || H || K1)
+   *   K3 = HASH(K || H || K1 || K2)
+   *   ...
+   *   key = K1 || K2 || K3 || ...
+   */
+		/// <exception cref="System.Exception"/>
+		private byte[] ExpandKey(Buffer buf, byte[] K, byte[] H, byte[] key, HASH hash
+			, int required_length)
+		{
+			byte[] result = key;
+			int size = hash.GetBlockSize();
+			while (result.Length < required_length)
+			{
+				buf.Reset();
+				buf.PutMPInt(K);
+				buf.PutByte(H);
+				buf.PutByte(result);
+				hash.Update(buf.buffer, 0, buf.index);
+				byte[] tmp = new byte[result.Length + size];
+				System.Array.Copy(result, 0, tmp, 0, result.Length);
+				System.Array.Copy(hash.Digest(), 0, tmp, result.Length, size);
+				Util.Bzero(result);
+				result = tmp;
+			}
+			return result;
+		}
+
+  /*public*/
+ /*synchronized*/
 		/// <exception cref="System.Exception"/>
 		internal virtual void Write(Packet packet, Channel c, int length)
 		{
