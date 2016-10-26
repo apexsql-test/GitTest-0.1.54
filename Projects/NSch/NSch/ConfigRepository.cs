@@ -30,9 +30,9 @@ using Sharpen;
 
 namespace NSch
 {
-	public interface ConfigRepository
+    public abstract class ConfigRepository
 	{
-		ConfigRepository.Config getConfig(string host);
+		public abstract Config GetConfig(string host);
 
 		public interface Config
 		{
@@ -47,7 +47,7 @@ namespace NSch
 			string[] getValues(string key);
 		}
 
-		private sealed class _Config_44 : ConfigRepository.Config
+		private sealed class _Config_44 : Config
 		{
 			public _Config_44()
 			{
@@ -85,17 +85,15 @@ namespace NSch
 			{
 			}
 
-			public ConfigRepository.Config getConfig(string host)
+			public override Config GetConfig(string host)
 			{
-				return ConfigRepository.defaultConfig;
+				return defaultConfig;
 			}
 		}
+
+		public Config defaultConfig = new _Config_44();
+
+		public ConfigRepository nullConfig = new _ConfigRepository_52();
 	}
 
-	public static class ConfigRepositoryConstants
-	{
-		public const ConfigRepository.Config defaultConfig = new _Config_44();
-
-		public const ConfigRepository nullConfig = new _ConfigRepository_52();
-	}
 }
