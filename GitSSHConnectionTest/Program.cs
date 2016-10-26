@@ -376,7 +376,7 @@ namespace GitSSHConnectionTest
 
             JSch.SetLogger(new JSchLogger());
 
-#if true
+#if false
             // HTTPS test section
             run_Github_HTTPS_Test(GithubHTTPSDir);
             run_Bitbucket_HTTPS_Test(BitbucketHTTPSDir);
@@ -388,7 +388,7 @@ namespace GitSSHConnectionTest
             run_Bitbucket_SSH_Test(BitbucketSSHSDir);
 #else
             run_VSO_SSH_Test(VSOSSHDir);
-            //run_TFS_SSH_Test(TfsSSHDir);
+            run_TFS_SSH_Test(TfsSSHDir);
 #endif
 
             Console.WriteLine("Press any key to EXIT");
