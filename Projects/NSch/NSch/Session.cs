@@ -2572,10 +2572,26 @@ loop_break: ;
 			return rport;
 		}
 
+		/// <summary>Cancels the remote port forwarding assigned at remote TCP port <code>rport</code>.
+		/// 	</summary>
+		/// <param name="rport">remote TCP port</param>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void DelPortForwardingR(int rport)
 		{
-			ChannelForwardedTCPIP.DelPort(this, rport);
+			this.DelPortForwardingR(null, rport);
+		}
+
+		/// <summary>
+		/// Cancels the remote port forwarding assigned at
+		/// remote TCP port <code>rport</code> bound on the interface at
+		/// <code>bind_address</code>.
+		/// </summary>
+		/// <param name="bind_address">bind address of the interface on the remote</param>
+		/// <param name="rport">remote TCP port</param>
+		/// <exception cref="NSch.JSchException"/>
+		public virtual void DelPortForwardingR(string bind_address, int rport)
+		{
+			ChannelForwardedTCPIP.DelPort(this, bind_address, rport);
 		}
 
 		/// <exception cref="NSch.JSchException"/>
@@ -2605,6 +2621,10 @@ loop_break: ;
 						}
 						deflater.Init(Compression.DEFLATER, level);
 					}
+                    //catch (NoClassDefFoundError ee)
+                    //{
+                    //    throw new JSchException(ee.ToString(), ee);
+                    //}
 					catch (Exception ee)
 					{
 						throw new JSchException(ee.ToString(), ee);
@@ -2853,6 +2873,21 @@ loop_break: ;
 			Write(packet);
 		}
 
+		private static readonly byte[] nomoresessions = Util.Str2byte("no-more-sessions@openssh.com"
+			);
+
+		/// <exception cref="System.Exception"/>
+		public virtual void noMoreSessionChannels()
+		{
+			Buffer buf = new Buffer();
+			Packet packet = new Packet(buf);
+			packet.Reset();
+			buf.PutByte(unchecked((byte)SSH_MSG_GLOBAL_REQUEST));
+			buf.PutString(nomoresessions);
+			buf.PutByte(unchecked((byte)0));
+			Write(packet);
+		}
+
 		private HostKey hostkey = null;
 
 		public virtual HostKey GetHostKey()
@@ -2885,6 +2920,14 @@ loop_break: ;
 			return hostKeyAlias;
 		}
 
+		/// <summary>Sets the interval to send a keep-alive message.</summary>
+		/// <remarks>
+		/// Sets the interval to send a keep-alive message.  If zero is
+		/// specified, any keep-alive message must not be sent.  The default interval
+		/// is zero.
+		/// </remarks>
+		/// <param name="interval">the specified interval, in milliseconds.</param>
+		/// <seealso cref="getServerAliveInterval()"/>
 		/// <exception cref="NSch.JSchException"/>
 		public virtual void SetServerAliveInterval(int interval)
 		{
@@ -2892,16 +2935,32 @@ loop_break: ;
 			this.serverAliveInterval = interval;
 		}
 
-		public virtual void SetServerAliveCountMax(int count)
-		{
-			this.serverAliveCountMax = count;
-		}
-
+		/// <summary>Returns setting for the interval to send a keep-alive message.</summary>
+		/// <seealso cref="setServerAliveInterval(int)"/>
 		public virtual int GetServerAliveInterval()
 		{
 			return this.serverAliveInterval;
 		}
 
+		/// <summary>
+		/// Sets the number of keep-alive messages which may be sent without
+		/// receiving any messages back from the server.
+		/// </summary>
+		/// <remarks>
+		/// Sets the number of keep-alive messages which may be sent without
+		/// receiving any messages back from the server.  If this threshold is
+		/// reached while keep-alive messages are being sent, the connection will
+		/// be disconnected.  The default value is one.
+		/// </remarks>
+		/// <param name="count">the specified count</param>
+		/// <seealso cref="getServerAliveCountMax()"/>
+		public virtual void SetServerAliveCountMax(int count)
+		{
+			this.serverAliveCountMax = count;
+		}
+
+		/// <summary>Returns setting for the threshold to send keep-alive messages.</summary>
+		/// <seealso cref="setServerAliveCountMax(int)"/>
 		public virtual int GetServerAliveCountMax()
 		{
 			return this.serverAliveCountMax;
@@ -2922,13 +2981,20 @@ loop_break: ;
 			{
 				JSch.GetLogger().Log(Logger.INFO, "CheckCiphers: " + ciphers);
 			}
+			string cipherc2s = GetConfig("cipher.c2s");
+			string ciphers2c = GetConfig("cipher.s2c");
 			ArrayList result = new ArrayList();
 			string[] _ciphers = Util.Split(ciphers, ",");
 			for (int i = 0; i < _ciphers.Length; i++)
 			{
-				if (!CheckCipher(GetConfig(_ciphers[i])))
+				string cipher = _ciphers[i];
+				if (ciphers2c.IndexOf(cipher) == -1 && cipherc2s.IndexOf(cipher) == -1)
 				{
-					result.Add(_ciphers[i]);
+					continue;
+				}
+				if (!CheckCipher(GetConfig(cipher)))
+				{
+					result.Add(cipher);
 				}
 			}
 			if (result.Count == 0)
@@ -2953,8 +3019,7 @@ loop_break: ;
 			{
 				Type c = Sharpen.Runtime.GetType(cipher);
 				NSch.Cipher _c = (NSch.Cipher)(System.Activator.CreateInstance(c));
-				_c.Init(NSch.Cipher.ENCRYPT_MODE, new byte[_c.GetBlockSize()], new byte[_c.GetIVSize
-					()]);
+				_c.Init(NSch.Cipher.ENCRYPT_MODE, new byte[_c.GetBlockSize()], new byte[_c.GetIVSize()]);
 				return true;
 			}
 			catch (Exception)
