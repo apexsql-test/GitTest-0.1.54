@@ -618,6 +618,7 @@ loop_break: ;
 						}
 						connectThread.SetDaemon (true);
 						connectThread.Start();
+						//requestPortForwarding();
 					}
 				}
 			}
@@ -875,8 +876,8 @@ loop_break: ;
 					string message = "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!\n" + "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n"
 						 + "Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"
 						 + "It is also possible that the " + key_type + " host key has just been changed.\n"
-						 + "The fingerprint for the " + key_type + " key sent by the remote host is\n" +
-						 key_fprint + ".\n" + "Please contact your system administrator.\n" + "Add correct host key in "
+						 + "The fingerprint for the " + key_type + " key sent by the remote host " + chost
+						 + " is\n" + key_fprint + ".\n" + "Please contact your system administrator.\n" + "Add correct host key in "
 						 + file + " to get rid of this message.";
 					if (shkc.Equals("ask"))
 					{
@@ -899,8 +900,7 @@ loop_break: ;
 					insert = true;
 				}
 			}
-			if ((shkc.Equals("ask") || shkc.Equals("yes")) && (i != HostKeyRepository.OK) && 
-				!insert)
+			if ((shkc.Equals("ask") || shkc.Equals("yes")) && (i != HostKeyRepository.OK) && !insert)
 			{
 				if (shkc.Equals("yes"))
 				{
@@ -937,7 +937,7 @@ loop_break: ;
 			}
 			if (i == HostKeyRepository.OK && JSch.GetLogger().IsEnabled(Logger.INFO))
 			{
-				JSch.GetLogger().Log(Logger.INFO, "Host '" + host + "' is known and mathces the "
+				JSch.GetLogger().Log(Logger.INFO, "Host '" + host + "' is known and matches the "
 					 + key_type + " host key");
 			}
 			if (insert && JSch.GetLogger().IsEnabled(Logger.WARN))
@@ -3077,5 +3077,333 @@ loop_break: ;
 				return false;
 			}
 		}
+
+		private string[] CheckSignatures(string sigs)
+		{
+			if (sigs == null || sigs.Length == 0)
+			{
+				return null;
+			}
+			if (JSch.GetLogger().IsEnabled(Logger.INFO))
+			{
+				JSch.GetLogger().Log(Logger.INFO, "CheckSignatures: " + sigs);
+			}
+			ArrayList result = new ArrayList();
+			string[] _sigs = Util.Split(sigs, ",");
+			for (int i = 0; i < _sigs.Length; i++)
+			{
+				try
+				{
+					Type c = Sharpen.Runtime.GetType((string)JSch.GetConfig(_sigs[i]));
+					Signature sig = (Signature)(System.Activator.CreateInstance(c));
+					//sig.Init();
+				}
+				catch (Exception)
+				{
+					result.Add(_sigs[i]);
+				}
+			}
+			if (result.Count == 0)
+			{
+				return null;
+			}
+			string[] foo = new string[result.Count];
+			System.Array.Copy(Sharpen.Collections.ToArray(result), 0, foo, 0, result.Count);
+			if (JSch.GetLogger().IsEnabled(Logger.INFO))
+			{
+				for (int i_1 = 0; i_1 < foo.Length; i_1++)
+				{
+					JSch.GetLogger().Log(Logger.INFO, foo[i_1] + " is not available.");
+				}
+			}
+			return foo;
+		}
+
+		/// <summary>
+		/// Sets the identityRepository, which will be referred
+		/// in the public key authentication.
+		/// </summary>
+		/// <remarks>
+		/// Sets the identityRepository, which will be referred
+		/// in the public key authentication.  The default value is <code>null</code>.
+		/// </remarks>
+		/// <param name="identityRepository"></param>
+		/// <seealso cref="getIdentityRepository()"/>
+		public virtual void SetIdentityRepository(IdentityRepository identityRepository)
+		{
+			this.identityRepository = identityRepository;
+		}
+
+		/// <summary>Gets the identityRepository.</summary>
+		/// <remarks>
+		/// Gets the identityRepository.
+		/// If this.identityRepository is <code>null</code>,
+		/// JSch#getIdentityRepository() will be invoked.
+		/// </remarks>
+		/// <seealso cref="JSch.getIdentityRepository()"/>
+		internal virtual IdentityRepository GetIdentityRepository()
+		{
+			if (identityRepository == null)
+			{
+				return jsch.GetIdentityRepository();
+			}
+			return identityRepository;
+		}
+
+		/// <summary>Sets the hostkeyRepository, which will be referred in checking host keys.
+		/// 	</summary>
+		/// <param name="hostkeyRepository"></param>
+		/// <seealso cref="getHostKeyRepository()"/>
+		public virtual void SetHostKeyRepository(HostKeyRepository hostkeyRepository)
+		{
+			this.hostkeyRepository = hostkeyRepository;
+		}
+
+		/// <summary>Gets the hostkeyRepository.</summary>
+		/// <remarks>
+		/// Gets the hostkeyRepository.
+		/// If this.hostkeyRepository is <code>null</code>,
+		/// JSch#getHostKeyRepository() will be invoked.
+		/// </remarks>
+		/// <seealso cref="JSch.getHostKeyRepository()"/>
+		public virtual HostKeyRepository GetHostKeyRepository()
+		{
+			if (hostkeyRepository == null)
+			{
+				return jsch.GetHostKeyRepository();
+			}
+			return hostkeyRepository;
+		}
+
+  /*
+  // setProxyCommand("ssh -l user2 host2 -o 'ProxyCommand ssh user1@host1 nc host2 22' nc %h %p") 
+  public void setProxyCommand(String command){
+    setProxy(new ProxyCommand(command));
+  }
+
+  class ProxyCommand implements Proxy {
+    String command;
+    Process p = null;
+    InputStream in = null;
+    OutputStream out = null;
+    ProxyCommand(String command){
+      this.command = command;
+    }
+    public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws Exception {
+      String _command = command.replace("%h", host);
+      _command = _command.replace("%p", new Integer(port).toString());
+      p = Runtime.getRuntime().exec(_command);
+      in = p.getInputStream();
+      out = p.getOutputStream();
+    }
+    public Socket getSocket() { return null; }
+    public InputStream getInputStream() { return in; }
+    public OutputStream getOutputStream() { return out; }
+    public void close() {
+      try{
+        if(p!=null){
+          p.getErrorStream().close();
+          p.getOutputStream().close();
+          p.getInputStream().close();
+          p.destroy();
+          p=null;
+        }
+      }
+      catch(IOException e){
+      }
+    }
+  }
+  */
+#if false
+		/// <exception cref="NSch.JSchException"/>
+		private void applyConfig()
+		{
+			ConfigRepository configRepository = jsch.GetConfigRepository();
+			if (configRepository == null)
+			{
+				return;
+			}
+			ConfigRepository.Config config = configRepository.getConfig(org_host);
+			string value = null;
+			value = config.getUser();
+			if (value != null)
+			{
+				username = value;
+			}
+			value = config.getHostname();
+			if (value != null)
+			{
+				host = value;
+			}
+			int port = config.getPort();
+			if (port != -1)
+			{
+				this.port = port;
+			}
+			checkConfig(config, "kex");
+			checkConfig(config, "server_host_key");
+			checkConfig(config, "cipher.c2s");
+			checkConfig(config, "cipher.s2c");
+			checkConfig(config, "mac.c2s");
+			checkConfig(config, "mac.s2c");
+			checkConfig(config, "compression.c2s");
+			checkConfig(config, "compression.s2c");
+			checkConfig(config, "compression_level");
+			checkConfig(config, "StrictHostKeyChecking");
+			checkConfig(config, "HashKnownHosts");
+			checkConfig(config, "PreferredAuthentications");
+			checkConfig(config, "MaxAuthTries");
+			checkConfig(config, "ClearAllForwardings");
+			value = config.getValue("HostKeyAlias");
+			if (value != null)
+			{
+				this.SetHostKeyAlias(value);
+			}
+			value = config.getValue("UserKnownHostsFile");
+			if (value != null)
+			{
+				KnownHosts kh = new KnownHosts(jsch);
+				kh.SetKnownHosts(value);
+				this.SetHostKeyRepository(kh);
+			}
+			string[] values = config.getValues("IdentityFile");
+			if (values != null)
+			{
+				string[] global = configRepository.getConfig(string.Empty).getValues("IdentityFile"
+					);
+				if (global != null)
+				{
+					for (int i = 0; i < global.Length; i++)
+					{
+						jsch.AddIdentity(global[i]);
+					}
+				}
+				else
+				{
+					global = new string[0];
+				}
+				if (values.Length - global.Length > 0)
+				{
+					IdentityRepository.Wrapper ir = new IdentityRepository.Wrapper(jsch.getIdentityRepository
+						(), true);
+					for (int i = 0; i < values.Length; i++)
+					{
+						string ifile = values[i];
+						for (int j = 0; j < global.Length; j++)
+						{
+							if (!ifile.Equals(global[j]))
+							{
+								continue;
+							}
+							ifile = null;
+							break;
+						}
+						if (ifile == null)
+						{
+							continue;
+						}
+						Identity identity = IdentityFile.NewInstance(ifile, null, jsch);
+						ir.add(identity);
+					}
+					this.SetIdentityRepository(ir);
+				}
+			}
+			value = config.getValue("ServerAliveInterval");
+			if (value != null)
+			{
+				try
+				{
+					this.SetServerAliveInterval(System.Convert.ToInt32(value));
+				}
+				catch (FormatException)
+				{
+				}
+			}
+			value = config.getValue("ConnectTimeout");
+			if (value != null)
+			{
+				try
+				{
+					SetTimeout(System.Convert.ToInt32(value));
+				}
+				catch (FormatException)
+				{
+				}
+			}
+			value = config.getValue("MaxAuthTries");
+			if (value != null)
+			{
+				SetConfig("MaxAuthTries", value);
+			}
+			value = config.getValue("ClearAllForwardings");
+			if (value != null)
+			{
+				SetConfig("ClearAllForwardings", value);
+			}
+		}
+
+		/// <exception cref="NSch.JSchException"/>
+		private void applyConfigChannel(ChannelSession channel)
+		{
+			ConfigRepository configRepository = jsch.getConfigRepository();
+			if (configRepository == null)
+			{
+				return;
+			}
+			ConfigRepository.Config config = configRepository.getConfig(org_host);
+			string value = null;
+			value = config.getValue("ForwardAgent");
+			if (value != null)
+			{
+				channel.SetAgentForwarding(value.Equals("yes"));
+			}
+			value = config.getValue("RequestTTY");
+			if (value != null)
+			{
+				channel.SetPty(value.Equals("yes"));
+			}
+		}
+
+		/// <exception cref="NSch.JSchException"/>
+		private void requestPortForwarding()
+		{
+			if (getConfig("ClearAllForwardings").Equals("yes"))
+			{
+				return;
+			}
+			ConfigRepository configRepository = jsch.getConfigRepository();
+			if (configRepository == null)
+			{
+				return;
+			}
+			ConfigRepository.Config config = configRepository.getConfig(org_host);
+			string[] values = config.getValues("LocalForward");
+			if (values != null)
+			{
+				for (int i = 0; i < values.Length; i++)
+				{
+					setPortForwardingL(values[i]);
+				}
+			}
+			values = config.getValues("RemoteForward");
+			if (values != null)
+			{
+				for (int i = 0; i < values.Length; i++)
+				{
+					setPortForwardingR(values[i]);
+				}
+			}
+		}
+
+		private void checkConfig(ConfigRepository.Config config, string key)
+		{
+			string value = config.getValue(key);
+			if (value != null)
+			{
+				this.setConfig(key, value);
+			}
+		}
+#endif
+
 	}
 }
