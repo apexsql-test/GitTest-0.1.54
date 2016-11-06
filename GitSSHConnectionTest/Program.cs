@@ -97,15 +97,38 @@ namespace GitSSHConnectionTest
                 throw e;
             }
 
-            Console.WriteLine("Ok");
+            Console.WriteLine("Repo Cloned");
 
         }
 
-        static void runTest(string dir, string url)
+        static void runTest(string localPath, string url)
         {
-            ClearDirectory(dir);
-            DeleteEmptyRepository(dir);
-            TryToClone(dir, url);
+            ClearDirectory(localPath);
+            DeleteEmptyRepository(localPath);
+            TryToClone(localPath, url);
+
+            try
+            {
+                string LoginName = "";
+                //if (m_client.GetRepository().Resolve(NGit.Constants.HEAD) == null)
+                {
+                    m_client.Commit()
+                        .SetAuthor(LoginName, string.Empty)
+                        .SetCommitter(LoginName, string.Empty)
+                        .SetMessage("Initialization")
+                        .Call();
+                    m_client.Push().Call();
+
+                    Console.WriteLine("Repo Initialized");
+                }
+            }
+            catch (Exception e)
+            {
+                ClearDirectory(localPath);
+                DeleteEmptyRepository(localPath);
+                throw e;
+            }
+
         }
 
         static void runSSHTest(string url, string repo)
@@ -140,7 +163,8 @@ namespace GitSSHConnectionTest
 
         static void run_GitHub_SSH_Test(string repo)
         {
-            const string github_url = "git@github.com:apexsql-test/test02.git";
+            //const string github_url = "git@github.com:apexsql-test/test02.git";
+            const string github_url = "git@github.com:apexsql-test/gitrepo.git";
             runSSHTest(github_url, repo);
         }
 
@@ -152,7 +176,7 @@ namespace GitSSHConnectionTest
 
         static void run_VSO_SSH_Test(string repo)
         {
-            const string vso_url = "ssh://harut70@harut70.visualstudio.com:22/_git/ApexSQL%20VSO%20version";
+            const string vso_url = "ssh://harut70@harut70.visualstudio.com:22/ApexSQL%20VSO%20version/_git/TestRepo01";
             runSSHTest(vso_url, repo);
         }
 
@@ -160,6 +184,13 @@ namespace GitSSHConnectionTest
         {
             const string tfs_url = "ssh://grigoryanharutiun@grigoryanharutiun.visualstudio.com:22/_git/HarutTest";
             runSSHTest(tfs_url, repo);
+        }
+
+        static void run_BitBucketAD_SSH_Test(string repo)
+        {
+            //const string url = "ssh://git@lima.eastus.cloudapp.azure.com:7999/tes/testrepository.git";
+            const string url = "ssh://git@lima.eastus.cloudapp.azure.com:7999/sctes/sc_test_repo.git";
+            runSSHTest(url, repo);
         }
 
         static void runHTTPSTest(string repo, string url, string login, string pswd)
@@ -187,7 +218,8 @@ namespace GitSSHConnectionTest
         {
             const string github_login = "apexsql-test";
             const string github_pswd = "apex_SQL01";
-            const string github_url = "https://github.com/apexsql-test/test02.git";
+            //const string github_url = "https://github.com/apexsql-test/test02.git";
+            const string github_url = "https://github.com/apexsql-test/gitrepo.git";
 
             runHTTPSTest(repo, github_url, github_login, github_pswd);
         }
@@ -201,9 +233,18 @@ namespace GitSSHConnectionTest
             runHTTPSTest(repo, bitbucket_url, bitbucket_login, bitbucket_pswd);
         }
 
+        static void run_BitBucketAD_HTTP_Test(string repo)
+        {
+            const string bitbucket_login = "Harut";
+            const string bitbucket_pswd = "49GEHNYVWcxmz";
+            const string bitbucket_url = "http://lima.eastus.cloudapp.azure.com:7990/git/tes/TestRepository.git";
+
+            runHTTPSTest(repo, bitbucket_url, bitbucket_login, bitbucket_pswd);
+        }
+
         static void run_VSO_HTTPS_Test(string repo)
         {
-            string vso_url = "https://harut70.visualstudio.com/_git/ApexSQL%20VSO%20version";
+            string vso_url = "https://harut70.visualstudio.com/ApexSQL%20VSO%20version/_git/TestRepo02";
             TargetUri target = new TargetUri("https://harut70.visualstudio.com/_git");
             string username = "harut70";
 
@@ -366,6 +407,9 @@ namespace GitSSHConnectionTest
             string TfsHTTPSDir = TestFolder + "\\tfs_https";
             string TfsSSHDir = TestFolder + "\\tfs_ssh";
 
+            string BitBucketAD_SSHDir = TestFolder + "\\bitbucket_ad_ssh";
+            string BitBucketAD_HTTPDir = TestFolder + "\\bitbucket_ad_http";
+
             Directory.CreateDirectory(TestFolder);
             Directory.CreateDirectory(LogFolder);
 
@@ -376,20 +420,20 @@ namespace GitSSHConnectionTest
 
             JSch.SetLogger(new JSchLogger());
 
-#if false
             // HTTPS test section
-            run_Github_HTTPS_Test(GithubHTTPSDir);
-            run_Bitbucket_HTTPS_Test(BitbucketHTTPSDir);
-            run_VSO_HTTPS_Test(VsoHTTPSDir);
-            run_TFS_HTTPS_Test(TfsHTTPSDir);
+            //run_Github_HTTPS_Test(GithubHTTPSDir);
+            //run_Bitbucket_HTTPS_Test(BitbucketHTTPSDir);
+            //run_TFS_HTTPS_Test(TfsHTTPSDir);
+            //run_BitBucketAD_HTTP_Test(BitBucketAD_HTTPDir);
 
             // SSH test section
-            run_GitHub_SSH_Test(GithubSSHSDir);
-            run_Bitbucket_SSH_Test(BitbucketSSHSDir);
-#else
+            //run_GitHub_SSH_Test(GithubSSHSDir);
+            //run_Bitbucket_SSH_Test(BitbucketSSHSDir);
+            //run_TFS_SSH_Test(TfsSSHDir);
+            //run_BitBucketAD_SSH_Test(BitBucketAD_SSHDir);
+
+            //run_VSO_HTTPS_Test(VsoHTTPSDir);
             run_VSO_SSH_Test(VSOSSHDir);
-            run_TFS_SSH_Test(TfsSSHDir);
-#endif
 
             Console.WriteLine("Press any key to EXIT");
             while (!Console.KeyAvailable) ;
